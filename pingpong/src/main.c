@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
         }
 
         for (int i = 0; i <= BYTE_EXPONENT; i++) {
-            printf("Bandwidth for %d bytes: %f b/s\n", data[i].bytes, data[i].bytes / data[i].time);
+            printf("Bandwidth %d bytes: %lf byte/s\n", data[i].bytes, data[i].bytes / data[i].time);
         }
     } else if (rank == 1) {
         for (int i = 0; i <= BYTE_EXPONENT; i++) {
