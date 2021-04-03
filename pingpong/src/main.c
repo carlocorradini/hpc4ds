@@ -36,7 +36,12 @@ int main(int argc, char **argv) {
         for (int i = 0; i <= BYTE_EXPONENT; i++) {
             double start, end, transfer_time;
             uint32_t bytes = (uint32_t) pow(2, i);
+            // Allocate a buffer just big enough to hold the payload
             byte_t *buffer = (byte_t *) calloc(bytes, sizeof(byte_t));
+            if (buffer == NULL) {
+                fprintf(stderr, "Unable to allocate a buffer of %d bytes", bytes);
+                MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+            }
 
             transfer_time = 0;
             for (int j = 0; j < PRECISION; j++) {
@@ -67,6 +72,10 @@ int main(int argc, char **argv) {
 
             // Allocate a buffer just big enough to hold the incoming buffer
             uint8_t *buffer = (byte_t *) calloc(bytes, sizeof(byte_t));
+            if (buffer == NULL) {
+                fprintf(stderr, "Unable to allocate a buffer of %d bytes", bytes);
+                MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+            }
 
             for (int j = 0; j < PRECISION; j++) {
                 MPI_Recv(buffer, bytes, MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
