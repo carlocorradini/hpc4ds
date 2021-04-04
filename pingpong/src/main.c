@@ -12,7 +12,9 @@ typedef uint8_t byte_t;
 
 // Ping Pong data
 typedef struct pp_data {
+    // Bytes sent
     uint32_t bytes;
+    // Time in seconds
     double time;
 } pp_data;
 
@@ -60,7 +62,12 @@ int main(int argc, char **argv) {
         }
 
         for (int i = 0; i <= BYTE_EXPONENT; i++) {
-            printf("Bandwidth %d bytes: %lf byte/s\n", data[i].bytes, data[i].bytes / data[i].time);
+            const pp_data d = data[i];
+            size_t throughput_byte_s = d.bytes / d.time;
+            size_t throughput_byte_ms = d.bytes / (d.time * pow(10, 3));
+            size_t throughput_byte_us = d.bytes / (d.time * pow(10, 6));
+            printf("%d bytes in %lfs: [%ld byte/s] [%ld byte/ms] [%ld byte/us]\n",
+                   d.bytes, d.time, throughput_byte_s, throughput_byte_ms, throughput_byte_us);
         }
     } else if (rank == 1) {
         for (int i = 0; i <= BYTE_EXPONENT; i++) {
