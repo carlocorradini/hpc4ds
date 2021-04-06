@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <sys/time.h>
 #include <mpi.h>
 
-#define BYTE_EXPONENT 20
-#define PRECISION 10
+#define EXPONENT 20
+#define PRECISION 16
 
 // Byte type alias
 typedef uint8_t byte_t;
@@ -14,8 +15,8 @@ typedef uint8_t byte_t;
 typedef struct pp_data {
     // Bytes sent
     uint32_t bytes;
-    // Time in seconds
-    double time;
+    // Transfer time in microseconds
+    uint64_t transfer_time_us;
 } pp_data;
 
 int main(int argc, char **argv) {
@@ -33,10 +34,11 @@ int main(int argc, char **argv) {
 
     if (rank == 0) {
         // Result data
-        pp_data data[BYTE_EXPONENT + 1];
+        pp_data data[EXPONENT + 1];
 
-        for (int i = 0; i <= BYTE_EXPONENT; i++) {
-            double start, end, transfer_time;
+        for (int i = 0; i <= EXPONENT; i++) {
+            struct timeval start, end;
+            uint64_t transfer_time = 0;
             uint32_t bytes = (uint32_t) pow(2, i);
             // Allocate a buffer just big enough to hold the payload
             byte_t *buffer = (byte_t *) calloc(bytes, sizeof(byte_t));
@@ -45,32 +47,32 @@ int main(int argc, char **argv) {
                 MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
             }
 
-            transfer_time = 0;
             for (int j = 0; j < PRECISION; j++) {
-                start = MPI_Wtime();
+                gettimeofday(&start, NULL);
                 MPI_Send(buffer, bytes, MPI_BYTE, 1, 0, MPI_COMM_WORLD);
                 MPI_Recv(buffer, bytes, MPI_BYTE, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                end = MPI_Wtime();
+                gettimeofday(&end, NULL);
 
-                transfer_time += end - start;
+                // Calculate time difference in us
+                transfer_time += ((end.tv_sec - start.tv_sec) * 1000000) + (end.tv_usec - start.tv_usec);
             }
-            transfer_time = transfer_time / (2.0 * PRECISION);
+            transfer_time = transfer_time / (2 * PRECISION);
 
             data[i] = (pp_data) {bytes, transfer_time};
 
             free(buffer);
         }
 
-        for (int i = 0; i <= BYTE_EXPONENT; i++) {
+        // Print data
+        for (int i = 0; i <= EXPONENT; i++) {
             const pp_data d = data[i];
-            size_t throughput_byte_s = d.bytes / d.time;
-            size_t throughput_byte_ms = d.bytes / (d.time * pow(10, 3));
-            size_t throughput_byte_us = d.bytes / (d.time * pow(10, 6));
-            printf("%d bytes in %lfs: [%ld byte/s] [%ld byte/ms] [%ld byte/us]\n",
-                   d.bytes, d.time, throughput_byte_s, throughput_byte_ms, throughput_byte_us);
+            const double transfer_time_s = d.transfer_time_us / (double) pow(10, 6);
+            const double throughput = d.bytes / (transfer_time_s <= 1.0 ? 1.0 : transfer_time_s);
+            printf("%8d bytes in %6ldus (~%lds) | Throughput ~%ld byte/s\n",
+                   d.bytes, d.transfer_time_us, (uint64_t) round(transfer_time_s), (uint64_t) round(throughput));
         }
     } else if (rank == 1) {
-        for (int i = 0; i <= BYTE_EXPONENT; i++) {
+        for (int i = 0; i <= EXPONENT; i++) {
             MPI_Status status;
             uint32_t bytes;
 
