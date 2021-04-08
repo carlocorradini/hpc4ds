@@ -1,26 +1,34 @@
 import matplotlib.pyplot as plt
 plt.style.use('seaborn-whitegrid')
 import numpy as np
+import re
 
 BYTE_EXPONENT = 21
 
 raw_data = []
 data = []
-with open("./input_cluster_1_2.txt", "r") as f:
+_JOIN_WHITESPACE = re.compile(r"\s+")
+
+# Extracting lines and joining whitespaces
+with open("./input_try.txt", "r") as f:
 	for line in f:
+		line = _JOIN_WHITESPACE.sub(" ", line).strip()
 		raw_data.append(line.split(" "))
 
+# Picking time values at the proper position in the line
 for i in range(BYTE_EXPONENT):
-	data.append(raw_data[i][3])		# Number at third address
+	data.append(raw_data[i][3])		# Number at fourth address
 
+# Removing the "us" unit
 for i in range(BYTE_EXPONENT):
 	l = len(data[i]) - 2
 	data[i] = int(data[i][0:l])
 
-print(data)
+#print(data)
 y = data
 x = []
 
+# Putting the packet size in bytes on the x axis
 for i in range(BYTE_EXPONENT):
 	x.append(2**i)
 
