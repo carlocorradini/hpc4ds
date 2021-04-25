@@ -1,16 +1,19 @@
 cmake_minimum_required(VERSION 3.20)
 project(navierstrokes C)
 
+# Configuration
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_COMPILER mpicc)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")
 
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
 
-# Header
+# Headers
 file(GLOB HEADER_FILES src/*.h)
 # Sources
 file(GLOB SOURCE_FILES src/*.c)
 
 # Executable
 add_executable(navierstrokes ${SOURCE_FILES} ${HEADER_FILES})
+target_link_libraries(navierstrokes m)
