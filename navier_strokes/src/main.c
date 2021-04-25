@@ -109,8 +109,8 @@ static double *getInverseWarpPosition(double x, double y, double scale) {
     // TODO Struct here
     double *result = calloc(2, sizeof(double));
 
-    size_t cellX = floor(x * (double) N);
-    size_t cellY = floor(y * (double) N);
+    size_t cellX = (size_t) floor(x * (double) N);
+    size_t cellY = (size_t) floor(y * (double) N);
 
     double cellU = (x * (double) N - ((double) cellX)) * N_INVERSE;
     double cellV = (y * (double) N - ((double) cellY)) * N_INVERSE;

@@ -4,7 +4,7 @@ project(navierstrokes C)
 # Configuration
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_COMPILER mpicc)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wshadow -Wdouble-promotion -Wformat -Wformat-security -Wundef -Wconversion -fno-common -pedantic")
 
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
