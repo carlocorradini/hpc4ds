@@ -28,7 +28,7 @@ static double *getInverseWarpPosition(double x, double y, double scale);
 
 static double lerp(double x0, double x1, double l);
 
-static void swap(double *x0, double *x);
+static void swap(double **x0, double **x);
 
 static void add_source(double *x, const double *s, double dT);
 
@@ -105,6 +105,11 @@ static void tick(double dT, double viscosity, double diff) {
     dens_step(dense, dense_prev, u, v, diff, dT);
 }
 
+/**
+ *  All parameters and return values are in normalized form 0.0 - 1.0
+ *	@return the warped position, inverse to the motion direction
+ * 	TODO REVIEW THIS
+ */
 static double *getInverseWarpPosition(double x, double y, double scale) {
     // TODO Struct here
     double *result = calloc(2, sizeof(double));
@@ -139,13 +144,15 @@ static double lerp(double x0, double x1, double l) {
     return (1 - l) * x0 + l * x1;
 }
 
-static void swap(double *x0, double *x) {
-    // TODO Come on do better here
-    for (size_t i = 0; i < SIZE; ++i) {
-        double tmp = x0[i];
-        x0[i] = x[i];
-        x[i] = tmp;
-    }
+/**
+ *  TODO It may be better this way
+ *  Remember to call swap(&x, &y) with the reference, 
+ *  not just the variable name
+ */
+static void swap(double **x0, double **x) {
+    double *tmp = *x0;
+    *x0 = *x;
+    *x = tmp;
 }
 
 static void add_source(double *x, const double *s, double dT) {
@@ -224,23 +231,24 @@ static void set_bnd(size_t b, double *x) {
 }
 
 static void dens_step(double *x, double *x0, double *uu, double *vv, double diff, double dT) {
+    // TODO does swapping twice make sense?
     //add_source(x, x0, dt);
-    swap(x0, x);
+    swap(&x0, &x);
     diffuse(0, x, x0, diff, dT);
-    swap(x0, x);
+    swap(&x0, &x);
     advect(0, x, x0, uu, vv, dT);
 }
 
 static void vel_step(double *uu, double *vv, double *u0, double *v0, double viscosity, double dT) {
     add_source(uu, u0, dT);
     add_source(vv, v0, dT);
-    swap(u0, uu);
+    swap(&u0, &uu);
     diffuse(1, uu, u0, viscosity, dT);
-    swap(v0, vv);
+    swap(&v0, &vv);
     diffuse(2, vv, v0, viscosity, dT);
     project(uu, vv, u0, v0);
-    swap(u0, uu);
-    swap(v0, vv);
+    swap(&u0, &uu);
+    swap(&v0, &vv);
     advect(1, uu, u0, u0, v0, dT);
     advect(2, vv, v0, u0, v0, dT);
     project(uu, vv, u0, v0);
