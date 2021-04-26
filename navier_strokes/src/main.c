@@ -1,11 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
 #include "mpi.h"
 
 #define N 10
 
-static double N_INVERSE = 1 / (double) N;
 static size_t SIZE = (N + 2) * (N + 2);
 static double *u = NULL;
 static double *v = NULL;
@@ -16,17 +14,9 @@ static double *dense_prev = NULL;
 
 static size_t index_calc(size_t i, size_t j);
 
-static double getDx(size_t x, size_t y);
-
-static double getDy(size_t x, size_t y);
-
 static void applyForce(size_t cellX, size_t cellY, double vX, double vY);
 
 static void tick(double dT, double viscosity, double diff);
-
-static double *getInverseWarpPosition(double x, double y, double scale);
-
-static double lerp(double x0, double x1, double l);
 
 static void swap(double **x0, double **x);
 
@@ -84,14 +74,6 @@ static size_t index_calc(size_t i, size_t j) {
     return i + (N + 2) * j;
 }
 
-static double getDx(size_t x, size_t y) {
-    return u[index_calc(x + 1, y + 1)];
-}
-
-static double getDy(size_t x, size_t y) {
-    return v[index_calc(x + 1, y + 1)];
-}
-
 static void applyForce(size_t cellX, size_t cellY, double vX, double vY) {
     const double dX = u[index_calc(cellX, cellY)];
     const double dY = v[index_calc(cellX, cellY)];
@@ -103,45 +85,6 @@ static void applyForce(size_t cellX, size_t cellY, double vX, double vY) {
 static void tick(double dT, double viscosity, double diff) {
     vel_step(u, v, u_prev, v_prev, viscosity, dT);
     dens_step(dense, dense_prev, u, v, diff, dT);
-}
-
-/**
- *  All parameters and return values are in normalized form 0.0 - 1.0
- *	@return the warped position, inverse to the motion direction
- * 	TODO REVIEW THIS
- */
-static double *getInverseWarpPosition(double x, double y, double scale) {
-    // TODO Struct here
-    double *result = calloc(2, sizeof(double));
-
-    size_t cellX = (size_t) floor(x * (double) N);
-    size_t cellY = (size_t) floor(y * (double) N);
-
-    double cellU = (x * (double) N - ((double) cellX)) * N_INVERSE;
-    double cellV = (y * (double) N - ((double) cellY)) * N_INVERSE;
-
-    cellX += 1;
-    cellY += 2;
-
-    result[0] = (cellU > 0.5)
-                ? lerp(u[index_calc(cellX, cellY)], u[index_calc(cellX + 1, cellY)], cellU - 0.5)
-                : lerp(u[index_calc(cellX - 1, cellY)], u[index_calc(cellX, cellY)], 0.5 - cellU);
-    result[1] = (cellV > 0.5)
-                ? lerp(v[index_calc(cellX, cellY)], v[index_calc(cellX, cellY + 1)], cellU)
-                : lerp(v[index_calc(cellX, cellY)], v[index_calc(cellX, cellY - 1)], 0.5 - cellV);
-
-    result[0] *= -scale;
-    result[1] *= -scale;
-
-    result[0] += x;
-    result[1] += y;
-
-    return result;
-}
-
-static double lerp(double x0, double x1, double l) {
-    l *= 1; //TODO wtf?
-    return (1 - l) * x0 + l * x1;
 }
 
 /**
