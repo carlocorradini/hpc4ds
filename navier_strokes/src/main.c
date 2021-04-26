@@ -1,96 +1,113 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include "mpi.h"
 
-#define N 10
+#define WORLD_WIDTH 10
+#define WORLD_WIDTH_BOUNDS (WORLD_WIDTH + 2)
+#define WORLD_HEIGHT 10
+#define WORLD_HEIGHT_BOUNDS (WORLD_HEIGHT + 2)
+#define VISCOSITY 0.0001
+#define DIFFUSION 0.0001
+#define DENSITY 10
+#define TIME_STEP 0.01
 
-static const size_t SIZE = (N + 2) * (N + 2);
-static double *u = NULL;
-static double *v = NULL;
-static double *dense = NULL;
-static double *u_prev = NULL;
-static double *v_prev = NULL;
-static double *dense_prev = NULL;
+static double **u = NULL;
+static double **u_prev = NULL;
+static double **v = NULL;
+static double **v_prev = NULL;
+static double **dense = NULL;
+static double **dense_prev = NULL;
 
-static size_t index_calc(size_t i, size_t j);
+static void tick(void);
+
+static void increase_density(size_t x, size_t y);
 
 static void applyForce(size_t cellX, size_t cellY, double vX, double vY);
 
-static void tick(double dT, double viscosity, double diff);
-
 static void swap(double **x0, double **x);
 
-static void add_source(double *x, const double *s, double dT);
+static void add_source(double **x, double **s, double time_step);
 
-static void diffuse(size_t b, double *x, const double *x0, double diff, double dT);
+static void diffuse(size_t b, double **x, double **x0, double diff, double time_step);
 
-static void advect(size_t b, double *d, const double *d0, const double *uu, const double *vv, double dT);
+static void advect(size_t b, double **d, double **d0, double **uu, double **vv, double time_step);
 
-static void set_bnd(size_t b, double *x);
+static void set_bnd(size_t b, double **x);
 
-static void dens_step(double *x, double *x0, double *uu, double *vv, double diff, double dT);
+static void dens_step(double **x, double **x0, double **uu, double **vv, double diff, double time_step);
 
-static void vel_step(double *uu, double *vv, double *u0, double *v0, double viscosity, double dT);
+static void vel_step(double **uu, double **vv, double **u0, double **v0, double viscosity, double time_step);
 
-static void project(double *uu, double *vv, double *p, double *div);
+static void project(double **uu, double **vv, double **p, double **div);
 
 int main(void) {
     int rank, size;
-    u = (double *) calloc(SIZE, sizeof(double));
-    v = (double *) calloc(SIZE, sizeof(double));
-    dense = calloc(SIZE, sizeof(double));
-    u_prev = calloc(SIZE, sizeof(double));
-    v_prev = calloc(SIZE, sizeof(double));
-    dense_prev = calloc(SIZE, sizeof(double));
+
+    // TODO RICORDARSI DI AGGIUNGERE BOUNDARIES +2 IN X E +2 IN Y
+
+    // Allocate u & u_prev
+    u = (double **) calloc(WORLD_HEIGHT_BOUNDS, sizeof(double *));
+    for (size_t i = 0; i < WORLD_WIDTH_BOUNDS; ++i) u[i] = (double *) calloc(WORLD_WIDTH_BOUNDS, sizeof(double *));
+    u_prev = (double **) calloc(WORLD_HEIGHT_BOUNDS, sizeof(double *));
+    for (size_t i = 0; i < WORLD_WIDTH_BOUNDS; ++i) u_prev[i] = (double *) calloc(WORLD_WIDTH_BOUNDS, sizeof(double *));
+
+
+    // Allocate v & v_prev
+    v = (double **) calloc(WORLD_HEIGHT_BOUNDS, sizeof(double *));
+    for (size_t i = 0; i < WORLD_WIDTH_BOUNDS; ++i) v[i] = (double *) calloc(WORLD_WIDTH_BOUNDS, sizeof(double *));
+    v_prev = (double **) calloc(WORLD_HEIGHT_BOUNDS, sizeof(double *));
+    for (size_t i = 0; i < WORLD_WIDTH_BOUNDS; ++i) v_prev[i] = (double *) calloc(WORLD_WIDTH_BOUNDS, sizeof(double *));
+
+    // Allocate dense & dense_prev
+    dense = (double **) calloc(WORLD_HEIGHT_BOUNDS, sizeof(double *));
+    for (size_t i = 0; i < WORLD_WIDTH_BOUNDS; ++i) dense[i] = (double *) calloc(WORLD_WIDTH_BOUNDS, sizeof(double *));
+    dense_prev = (double **) calloc(WORLD_HEIGHT_BOUNDS, sizeof(double *));
+    for (size_t i = 0; i < WORLD_WIDTH_BOUNDS; ++i)
+        dense_prev[i] = (double *) calloc(WORLD_WIDTH_BOUNDS, sizeof(double *));
 
     MPI_Init(NULL, NULL);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     //
-    tick(0.01, 0.0001, 0.0001);
-    dense[index_calc(N / 2, N / 2)] += 10;
-    applyForce(N / 2, N / 2, 1.5, 1.7);
-    dense[index_calc(N / 2, N / 2)] += 5;
-    tick(0.01, 0.0001, 0.0001);
-    dense[index_calc(N / 2, N / 2)] += 1;
-    tick(0.01, 0.0001, 0.0001);
-
-    for (size_t x = 0; x < N + 2; ++x) {
-        for (size_t y = 0; y < N + 2; ++y) {
-            double density = dense[index_calc(x, y)];
-            printf("[{d: %lf}]   ", density);
-        }
-        printf("\n");
-    }
-
+    tick();
+    increase_density(WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
+    applyForce(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 1.5, 1.7);
+    increase_density(WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
+    tick();
+    increase_density(WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
+    tick();
     //
 
     MPI_Finalize();
     return EXIT_SUCCESS;
 }
 
-static size_t index_calc(size_t i, size_t j) {
-    return i + (N + 2) * j;
+static void tick(void) {
+    vel_step(u, v, u_prev, v_prev, VISCOSITY, TIME_STEP);
+    dens_step(dense, dense_prev, u, v, DIFFUSION, TIME_STEP);
 }
+
+static void increase_density(size_t x, size_t y) {
+    // TODO add bound checking
+    dense[x][y] += DENSITY;
+}
+
+//////////////////////////////////////////////////////////
 
 static void applyForce(size_t cellX, size_t cellY, double vX, double vY) {
-    const double dX = u[index_calc(cellX, cellY)];
-    const double dY = v[index_calc(cellX, cellY)];
+    const double dX = u[cellX][cellY];
+    const double dY = v[cellX][cellY];
 
-    u[index_calc(cellX, cellY)] = vX != 0 ? vX : dX;
-    v[index_calc(cellX, cellY)] = vY != 0 ? vY : dY;
-}
-
-static void tick(double dT, double viscosity, double diff) {
-    vel_step(u, v, u_prev, v_prev, viscosity, dT);
-    dens_step(dense, dense_prev, u, v, diff, dT);
+    // TODO scrivere meglio
+    u[cellX][cellY] = vX != 0 ? vX : dX;
+    v[cellX][cellY] = vY != 0 ? vY : dY;
 }
 
 /**
  *  TODO It may be better this way
  *  Remember to call swap(&x, &y) with the reference, 
  *  not just the variable name
+ *  not just the variable nameT
  */
 static void swap(double **x0, double **x) {
     double *tmp = *x0;
@@ -98,140 +115,141 @@ static void swap(double **x0, double **x) {
     *x = tmp;
 }
 
-static void add_source(double *x, const double *s, double dT) {
-    size_t size = (N + 2) * (N + 2);
-    for (size_t i = 0; i < size; i++)
-        x[i] += dT * s[i];
-}
-
-static void diffuse(size_t b, double *x, const double *x0, double diff, double dT) {
-    size_t i, j, k;
-    double a = dT * diff * (double) N * (double) N;
-
-    // TODO 20???
-    for (k = 0; k < 20; k++) {
-        for (i = 1; i <= N; i++) {
-            for (j = 1; j <= N; j++) {
-                x[index_calc(i, j)] =
-                        (x0[index_calc(i, j)]
-                         + a * (x[index_calc(i - 1, j)]
-                                + x[index_calc(i + 1, j)]
-                                + x[index_calc(i, j - 1)]
-                                + x[index_calc(i, j + 1)]))
-                        / (1 + 4 * a);
-            }
+static void add_source(double **_x, double **s, double time_step) {
+    for (size_t y = 0; y < WORLD_HEIGHT_BOUNDS; ++y) {
+        for (size_t x = 0; x < WORLD_WIDTH_BOUNDS; ++x) {
+            _x[y][x] += time_step * s[y][x];
         }
-
-        set_bnd(b, x);
     }
 }
 
-static void advect(size_t b, double *d, const double *d0, const double *uu, const double *vv, double dT) {
-    size_t i, j, i0, j0, i1, j1;
-    double x, y, s0, t0, s1, t1, dt0;
+static void diffuse(size_t b, double **_x, double **x0, double diff, double time_step) {
+    double a = time_step * diff * WORLD_WIDTH * WORLD_HEIGHT;
 
-    dt0 = dT * (double) N;
-    for (i = 1; i <= N; i++) {
-        for (j = 1; j <= N; j++) {
-            x = (double) i - dt0 * uu[index_calc(i, j)];
-            y = (double) j - dt0 * vv[index_calc(i, j)];
+    //TODO 20? MAYBE ITERATIONS? thread???
+    for (size_t k = 0; k < 20; k++) {
+        for (size_t y = 1; y <= WORLD_HEIGHT; ++y) {
+            for (size_t x = 1; x <= WORLD_WIDTH; ++x) {
+                _x[y][x] = (x0[y][x] + a * (_x[y][x - 1] + _x[y][x + 1] + _x[y - 1][x] + _x[y + 1][x]))
+                           / (1 + 4 * a);
+            }
+        }
 
-            if (x < 0.5) x = 0.5;
-            if (x > (double) N + 0.5) x = (double) N + 0.5;
+        set_bnd(b, _x);
+    }
+}
 
-            i0 = (size_t) x;
-            i1 = i0 + 1;
+static void advect(size_t b, double **d, double **d0, double **uu, double **vv, double time_step) {
+    // TODO controlla source dato che utilizza N
+    double dt0_width = time_step * (double) WORLD_WIDTH;
+    double dt0_height = time_step * (double) WORLD_HEIGHT;
 
-            if (y < 0.5) y = 0.5;
-            if (y > (double) N + 0.5) y = (double) N + 0.5;
+    // TODO Cambia i nomi please
+    for (size_t _y = 1; _y <= WORLD_HEIGHT; ++_y) {
+        for (size_t _x = 1; _x <= WORLD_WIDTH; ++_x) {
+            double x = (double) _x - dt0_width * uu[_y][_x];
+            double y = (double) _y - dt0_height * vv[_y][_x];
 
-            j0 = (size_t) y;
-            j1 = j0 + 1;
-            s1 = x - (double) i0;
-            s0 = 1 - s1;
-            t1 = y - (double) j0;
-            t0 = 1 - t1;
-            d[index_calc(i, j)] = s0 * (t0 * d0[index_calc(i0, j0)] + t1 * d0[index_calc(i0, j1)])
-                                  + s1 * (t0 * d0[index_calc(i1, j0)] + t1 * d0[index_calc(i1, j1)]);
+            // Check x
+            if (x < 0.5)
+                x = 0.5;
+            if (x > WORLD_WIDTH + 0.5)
+                x = WORLD_WIDTH + 0.5;
+            size_t x0 = (size_t) x;
+            size_t x1 = x0 + 1;
+
+            // Check y
+            if (y < 0.5)
+                y = 0.5;
+            if (y > WORLD_HEIGHT + 0.5)
+                y = WORLD_HEIGHT + 0.5;
+            size_t y0 = (size_t) y;
+            size_t y1 = y0 + 1;
+
+
+            double s1 = x - (double) x0;
+            double s0 = 1 - s1;
+            double t1 = y - (double) y0;
+            double t0 = 1 - t1;
+
+            d[_y][_x] = s0 * (t0 * d0[y0][x0] + t1 * d0[y1][x0])
+                        + s1 * (t0 * d0[y0][x1] + t1 * d0[y1][x1]);
         }
     }
 
     set_bnd(b, d);
 }
 
-static void set_bnd(size_t b, double *x) {
-    for (size_t i = 1; i <= N; i++) {
-        x[index_calc(0, i)] = (b == 1) ? -x[index_calc(1, i)] : x[index_calc(1, i)];
-        x[index_calc(N + 1, i)] = b == 1 ? -x[index_calc(N, i)] : x[index_calc(N, i)];
-        x[index_calc(i, 0)] = b == 2 ? -x[index_calc(i, 1)] : x[index_calc(i, 1)];
-        x[index_calc(i, N + 1)] = b == 2 ? -x[index_calc(i, N)] : x[index_calc(i, N)];
+static void set_bnd(size_t b, double **_x) {
+    for (size_t y = 1; y <= WORLD_HEIGHT; ++y) {
+        for (size_t x = 1; x <= WORLD_WIDTH; ++x) {
+            _x[y][0] = (b == 1) ? -_x[y][1] : _x[y][1];
+            _x[y][WORLD_WIDTH + 1] = b == 1 ? -_x[y][WORLD_WIDTH] : _x[y][WORLD_WIDTH];
+            _x[0][x] = b == 2 ? -_x[1][x] : _x[1][x];
+            _x[WORLD_HEIGHT + 1][x] = b == 2 ? -_x[WORLD_HEIGHT][x] : _x[WORLD_HEIGHT][x];
+        }
     }
 
-    x[index_calc(0, 0)] = 0.5 * (x[index_calc(1, 0)] + x[index_calc(0, 1)]);
-    x[index_calc(0, N + 1)] = 0.5 * (x[index_calc(1, N + 1)] + x[index_calc(0, N)]);
-    x[index_calc(N + 1, 0)] = 0.5 * (x[index_calc(N, 0)] + x[index_calc(N + 1, 1)]);
-    x[index_calc(N + 1, N + 1)] = 0.5 * (x[index_calc(N, N + 1)] + x[index_calc(N + 1, N)]);
+    _x[0][0] = 0.5 * (_x[0][1] + _x[1][0]);
+    _x[WORLD_HEIGHT + 1][0] = 0.5 * (_x[WORLD_HEIGHT + 1][1] + _x[WORLD_HEIGHT][0]);
+    _x[0][WORLD_WIDTH + 1] = 0.5 * (_x[0][WORLD_WIDTH] + _x[1][WORLD_WIDTH + 1]);
+    _x[WORLD_HEIGHT + 1][WORLD_WIDTH + 1] =
+            0.5 * (_x[WORLD_HEIGHT + 1][WORLD_WIDTH] + _x[WORLD_HEIGHT][WORLD_WIDTH + 1]);
 }
 
-static void dens_step(double *x, double *x0, double *uu, double *vv, double diff, double dT) {
+static void dens_step(double **x, double **x0, double **uu, double **vv, double diff, double time_step) {
     // TODO does swapping twice make sense?
-    //add_source(x, x0, dt);
-    swap(&x0, &x);
-    diffuse(0, x, x0, diff, dT);
-    swap(&x0, &x);
-    advect(0, x, x0, uu, vv, dT);
+    swap(x0, x);
+    diffuse(0, x, x0, diff, time_step);
+    swap(x0, x);
+    advect(0, x, x0, uu, vv, time_step);
 }
 
-static void vel_step(double *uu, double *vv, double *u0, double *v0, double viscosity, double dT) {
-    add_source(uu, u0, dT);
-    add_source(vv, v0, dT);
-    swap(&u0, &uu);
-    diffuse(1, uu, u0, viscosity, dT);
-    swap(&v0, &vv);
-    diffuse(2, vv, v0, viscosity, dT);
+static void vel_step(double **uu, double **vv, double **u0, double **v0, double viscosity, double time_step) {
+    add_source(uu, u0, time_step);
+    add_source(vv, v0, time_step);
+    swap(u0, uu);
+    diffuse(1, uu, u0, viscosity, time_step);
+    swap(v0, vv);
+    diffuse(2, vv, v0, viscosity, time_step);
     project(uu, vv, u0, v0);
-    swap(&u0, &uu);
-    swap(&v0, &vv);
-    advect(1, uu, u0, u0, v0, dT);
-    advect(2, vv, v0, u0, v0, dT);
+    swap(u0, uu);
+    swap(v0, vv);
+    advect(1, uu, u0, u0, v0, time_step);
+    advect(2, vv, v0, u0, v0, time_step);
     project(uu, vv, u0, v0);
 }
 
-static void project(double *uu, double *vv, double *p, double *div) {
-    size_t i, j, k;
-    double h = 1 / (double) N;
+static void project(double **uu, double **vv, double **p, double **div) {
+    // TODO ??? N CONTROLLA SOURCE
+    double h = 1.0 / WORLD_WIDTH;
 
-    for (i = 1; i <= N; i++) {
-        for (j = 1; j <= N; j++) {
-            div[index_calc(i, j)] =
-                    -0.5 * h * (uu[index_calc(i + 1, j)] - uu[index_calc(i - 1, j)] + vv[index_calc(i, j + 1)] - vv[index_calc(i,
-                                                                                                                j - 1)]);
-            p[index_calc(i, j)] = 0;
+    for (size_t y = 1; y <= WORLD_HEIGHT; ++y) {
+        for (size_t x = 1; x <= WORLD_WIDTH; ++x) {
+            div[y][x] = -0.5 * h
+                        * (uu[y][x + 1] - uu[y][x - 1] + vv[y + 1][x] - vv[y - 1][x]);
+            p[y][x] = 0;
         }
     }
 
     set_bnd(0, div);
     set_bnd(0, p);
 
-    // TODO 20?
-    for (k = 0; k < 20; k++) {
-        for (i = 1; i <= N; i++) {
-            for (j = 1; j <= N; j++) {
-                p[index_calc(i, j)] = (div[index_calc(i, j)]
-                                       + p[index_calc(i - 1, j)]
-                                       + p[index_calc(i + 1, j)]
-                                       + p[index_calc(i, j - 1)]
-                                       + p[index_calc(i, j + 1)])
-                                      / 4;
+    // TODO k = 20 wtf iterations?
+    for (size_t k = 0; k < 20; k++) {
+        for (size_t y = 1; y <= WORLD_HEIGHT; ++y) {
+            for (size_t x = 1; x <= WORLD_WIDTH; ++x) {
+                p[y][x] = (div[y][x] + p[y][x - 1] + p[y][x + 1] + p[y - 1][x] + p[y + 1][x]) / 4;
             }
         }
+
         set_bnd(0, p);
     }
 
-    for (i = 1; i <= N; i++) {
-        for (j = 1; j <= N; j++) {
-            uu[index_calc(i, j)] -= 0.5 * (p[index_calc(i + 1, j)] - p[index_calc(i - 1, j)]) / h;
-            vv[index_calc(i, j)] -= 0.5 * (p[index_calc(i, j + 1)] - p[index_calc(i, j - 1)]) / h;
+    for (size_t y = 1; y <= WORLD_HEIGHT; ++y) {
+        for (size_t x = 1; x <= WORLD_WIDTH; ++x) {
+            uu[y][x] -= 0.5 * (p[y][x + 1] - p[y][x - 1]) / h;
+            vv[y][x] -= 0.5 * (p[y + 1][x] - p[y - 1][x]) / h;
         }
     }
 
