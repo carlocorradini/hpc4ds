@@ -4,7 +4,7 @@
 
 #define N 10
 
-static size_t SIZE = (N + 2) * (N + 2);
+static const size_t SIZE = (N + 2) * (N + 2);
 static double *u = NULL;
 static double *v = NULL;
 static double *dense = NULL;
