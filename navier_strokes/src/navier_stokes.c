@@ -114,11 +114,7 @@ void ns_apply_force(ns_t *ns, size_t cellX, size_t cellY, double vX, double vY) 
     ns->v[cellX][cellY] = vY != 0 ? vY : dY;
 }
 
-const double **ns_get_world(const ns_t *ns) {
-    return (const double **) ns->dense;
-}
-
-ns_world_t *ns_get_worldddd(const ns_t *ns) {
+ns_world_t *ns_get_world(const ns_t *ns) {
     ns_world_t *world = (ns_world_t *) malloc(sizeof(ns_world_t));
 
     world->world_width = ns->world_width;
@@ -132,7 +128,7 @@ ns_world_t *ns_get_worldddd(const ns_t *ns) {
 
     for (size_t y = 0; y < ns->world_height_bounds; ++y) {
         for (size_t x = 0; x < ns->world_width_bounds; ++x) {
-            ns_cell_t cell = {.u=ns->u[y][x], .v=ns->v[y][x], .density=ns->dense[y][x]};
+            ns_cell_t cell = {.u=&ns->u[y][x], .v=&ns->v[y][x], .density=&ns->dense[y][x]};
             world->world[y][x] = cell;
         }
     }
