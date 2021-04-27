@@ -1,6 +1,5 @@
 #include "navier_stokes.h"
 #include <stdlib.h>
-#include "utils.h"
 
 typedef struct ns_t {
     // World
@@ -8,18 +7,22 @@ typedef struct ns_t {
     size_t world_width_bounds;
     size_t world_height;
     size_t world_height_bounds;
+
+    // Fluid
+    double viscosity;
+    double density;
+    double diffusion;
+
+    // Time
+    double time_step;
+
+    // World DATA
     double **u;
     double **u_prev;
     double **v;
     double **v_prev;
     double **dense;
     double **dense_prev;
-    // Fluid
-    double viscosity;
-    double density;
-    double diffusion;
-    // Time
-    double time_step;
 
 } ns_t;
 
@@ -38,6 +41,8 @@ static void ns_project(ns_t *ns);
 static void ns_advect(const ns_t *ns, size_t bounds, double **d, double **d0, double **u, double **v);
 
 static void ns_set_bounds(const ns_t *ns, size_t bounds, double **target);
+
+static void ns_swap_matrix(double ***x, double ***y);
 
 // PUBLIC
 ns_t *ns_create(size_t world_width, size_t world_height,
@@ -119,14 +124,14 @@ static void ns_velocity_step(ns_t *ns) {
     ns_add_source_to_target(ns, ns->u, (const double **) ns->u_prev);
     ns_add_source_to_target(ns, ns->v, (const double **) ns->v_prev);
 
-    swap_array(&ns->u_prev, &ns->u);
+    ns_swap_matrix(&ns->u_prev, &ns->u);
 
     ns_diffuse(ns, 1, ns->viscosity, ns->u, (const double **) ns->u_prev);
-    swap_array(&ns->v_prev, &ns->v);
+    ns_swap_matrix(&ns->v_prev, &ns->v);
     ns_diffuse(ns, 2, ns->viscosity, ns->v, (const double **) ns->v_prev);
     ns_project(ns);
-    swap_array(&ns->u_prev, &ns->u);
-    swap_array(&ns->v_prev, &ns->v);
+    ns_swap_matrix(&ns->u_prev, &ns->u);
+    ns_swap_matrix(&ns->v_prev, &ns->v);
     ns_advect(ns, 1, ns->u, ns->u_prev, ns->u_prev, ns->v_prev);
     ns_advect(ns, 2, ns->v, ns->v_prev, ns->u_prev, ns->v_prev);
     ns_project(ns);
@@ -134,9 +139,9 @@ static void ns_velocity_step(ns_t *ns) {
 
 static void ns_density_step(ns_t *ns) {
     // TODO does swapping twice make sense?
-    swap_array(&ns->dense_prev, &ns->dense);
+    ns_swap_matrix(&ns->dense_prev, &ns->dense);
     ns_diffuse(ns, 0, ns->diffusion, ns->dense, (const double **) ns->dense_prev);
-    swap_array(&ns->dense_prev, &ns->dense);
+    ns_swap_matrix(&ns->dense_prev, &ns->dense);
     ns_advect(ns, 0, ns->dense, ns->dense_prev, ns->u, ns->v);
 }
 
@@ -261,4 +266,10 @@ static void ns_set_bounds(const ns_t *ns, size_t bounds, double **target) {
     target[0][ns->world_width + 1] = 0.5 * (target[0][ns->world_width] + target[1][ns->world_width + 1]);
     target[ns->world_height + 1][ns->world_width + 1] =
             0.5 * (target[ns->world_height + 1][ns->world_width] + target[ns->world_height][ns->world_width + 1]);
+}
+
+static void ns_swap_matrix(double ***x, double ***y) {
+    double **tmp = *x;
+    *x = *y;
+    *y = tmp;
 }

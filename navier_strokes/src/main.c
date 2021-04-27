@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <mpi.h>
 #include "navier_stokes.h"
 
 #define WORLD_WIDTH 80
