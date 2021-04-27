@@ -23,7 +23,6 @@ typedef struct ns_t {
     double **v_prev;
     double **dense;
     double **dense_prev;
-
 } ns_t;
 
 // PRIVATE DEFINITIONS
@@ -64,33 +63,33 @@ ns_t *ns_create(size_t world_width, size_t world_height,
 
     // Allocate u
     ns->u = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->u[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
+    for (size_t i = 0; i < ns->world_height_bounds; ++i)
+        ns->u[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
 
     // Allocate u_prev
     ns->u_prev = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->u_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
+    for (size_t i = 0; i < ns->world_height_bounds; ++i)
+        ns->u_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
 
     // Allocate v
     ns->v = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->v[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
+    for (size_t i = 0; i < ns->world_height_bounds; ++i)
+        ns->v[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
 
     // Allocate v_prev
     ns->v_prev = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->v_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
+    for (size_t i = 0; i < ns->world_height_bounds; ++i)
+        ns->v_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
 
     // Allocate dense
     ns->dense = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->dense[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
+    for (size_t i = 0; i < ns->world_height_bounds; ++i)
+        ns->dense[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
 
     // Allocate dense_prev
     ns->dense_prev = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->dense_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
+    for (size_t i = 0; i < ns->world_height_bounds; ++i)
+        ns->dense_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
 
     return ns;
 }
@@ -117,6 +116,36 @@ void ns_apply_force(ns_t *ns, size_t cellX, size_t cellY, double vX, double vY) 
 
 const double **ns_get_world(const ns_t *ns) {
     return (const double **) ns->dense;
+}
+
+ns_world_t *ns_get_worldddd(const ns_t *ns) {
+    ns_world_t *world = (ns_world_t *) malloc(sizeof(ns_world_t));
+
+    world->world_width = ns->world_width;
+    world->world_width_bounds = ns->world_width_bounds;
+    world->world_height = ns->world_height;
+    world->world_height_bounds = ns->world_height_bounds;
+
+    world->world = (ns_cell_t **) calloc(ns->world_height_bounds, sizeof(ns_cell_t *));
+    for (size_t i = 0; i < ns->world_height_bounds; ++i)
+        world->world[i] = (ns_cell_t *) calloc(ns->world_width_bounds, sizeof(ns_cell_t));
+
+    for (size_t y = 0; y < ns->world_height_bounds; ++y) {
+        for (size_t x = 0; x < ns->world_width_bounds; ++x) {
+            ns_cell_t cell = {.u=ns->u[y][x], .v=ns->v[y][x], .density=ns->dense[y][x]};
+            world->world[y][x] = cell;
+        }
+    }
+
+    return world;
+}
+
+void ns_free_world(ns_world_t *world) {
+    for (size_t i = 0; i < world->world_height_bounds; ++i) {
+        free(world->world[i]);
+    }
+    free(world->world);
+    free(world);
 }
 
 // PRIVATE

@@ -23,13 +23,14 @@ int main(void) {
 
         for (size_t y = 0; y < WORLD_HEIGHT + 2; ++y) {
             for (size_t x = 0; x < WORLD_WIDTH + 2; ++x) {
-                const double **world = ns_get_world(ns);
-                double density = (int) (255 * world[y][x]);
+                ns_world_t *world = ns_get_worldddd(ns);
+                double density = (int) (255 * world->world[y][x].density);
                 if (density >= 255) {
                     density = 255;
                 }
 
                 fprintf(fp, "%ld, %ld, %d\n", x, y, (int) density);
+                ns_free_world(world);
             }
         }
         fprintf(fp, "\n");
