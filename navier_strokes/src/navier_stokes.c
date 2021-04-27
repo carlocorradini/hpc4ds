@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "utils.h"
 
-typedef struct navier_stokes_t {
+typedef struct ns_t {
     // World
     size_t world_width;
     size_t world_width_bounds;
@@ -21,29 +21,29 @@ typedef struct navier_stokes_t {
     // Time
     double time_step;
 
-} navier_stokes_t;
+} ns_t;
 
 // PRIVATE DEFINITIONS
-static void velocity_step(navier_stokes_t *ns);
+static void ns_velocity_step(ns_t *ns);
 
-static void density_step(navier_stokes_t *ns);
+static void ns_density_step(ns_t *ns);
 
-static void add_source_to_target(const navier_stokes_t *ns, double **target, const double **source);
+static void ns_add_source_to_target(const ns_t *ns, double **target, const double **source);
 
 static void
-diffuse(const navier_stokes_t *ns, size_t bounds, double diffusion_value, double **target, const double **source);
+ns_diffuse(const ns_t *ns, size_t bounds, double diffusion_value, double **target, const double **source);
 
-static void project(navier_stokes_t *ns);
+static void ns_project(ns_t *ns);
 
-static void advect(const navier_stokes_t *ns, size_t bounds, double **d, double **d0, double **u, double **v);
+static void ns_advect(const ns_t *ns, size_t bounds, double **d, double **d0, double **u, double **v);
 
-static void set_bnd(const navier_stokes_t *ns, size_t bounds, double **target);
+static void ns_set_bounds(const ns_t *ns, size_t bounds, double **target);
 
 // PUBLIC
-navier_stokes_t *ns_create(size_t world_width, size_t world_height,
-                           double viscosity, double density, double diffusion,
-                           double time_step) {
-    navier_stokes_t *ns = (navier_stokes_t *) malloc(sizeof(navier_stokes_t));
+ns_t *ns_create(size_t world_width, size_t world_height,
+                double viscosity, double density, double diffusion,
+                double time_step) {
+    ns_t *ns = (ns_t *) malloc(sizeof(ns_t));
 
     // World
     ns->world_width = world_width;
@@ -90,17 +90,17 @@ navier_stokes_t *ns_create(size_t world_width, size_t world_height,
     return ns;
 }
 
-void tick(navier_stokes_t *ns) {
-    velocity_step(ns);
-    density_step(ns);
+void ns_tick(ns_t *ns) {
+    ns_velocity_step(ns);
+    ns_density_step(ns);
 }
 
-void increase_density(navier_stokes_t *ns, size_t x, size_t y) {
+void ns_increase_density(ns_t *ns, size_t x, size_t y) {
     // TODO check bounds
     ns->dense[y][x] += ns->density;
 }
 
-void apply_force(navier_stokes_t *ns, size_t cellX, size_t cellY, double vX, double vY) {
+void ns_apply_force(ns_t *ns, size_t cellX, size_t cellY, double vX, double vY) {
     // TODO check bounds
     const double dX = ns->u[cellX][cellY];
     const double dY = ns->v[cellX][cellY];
@@ -110,37 +110,37 @@ void apply_force(navier_stokes_t *ns, size_t cellX, size_t cellY, double vX, dou
     ns->v[cellX][cellY] = vY != 0 ? vY : dY;
 }
 
-const double **get_world(const navier_stokes_t *ns) {
+const double **ns_get_world(const ns_t *ns) {
     return (const double **) ns->dense;
 }
 
 // PRIVATE
-static void velocity_step(navier_stokes_t *ns) {
-    add_source_to_target(ns, ns->u, (const double **) ns->u_prev);
-    add_source_to_target(ns, ns->v, (const double **) ns->v_prev);
+static void ns_velocity_step(ns_t *ns) {
+    ns_add_source_to_target(ns, ns->u, (const double **) ns->u_prev);
+    ns_add_source_to_target(ns, ns->v, (const double **) ns->v_prev);
 
     swap_array(&ns->u_prev, &ns->u);
 
-    diffuse(ns, 1, ns->viscosity, ns->u, (const double **) ns->u_prev);
+    ns_diffuse(ns, 1, ns->viscosity, ns->u, (const double **) ns->u_prev);
     swap_array(&ns->v_prev, &ns->v);
-    diffuse(ns, 2, ns->viscosity, ns->v, (const double **) ns->v_prev);
-    project(ns);
+    ns_diffuse(ns, 2, ns->viscosity, ns->v, (const double **) ns->v_prev);
+    ns_project(ns);
     swap_array(&ns->u_prev, &ns->u);
     swap_array(&ns->v_prev, &ns->v);
-    advect(ns, 1, ns->u, ns->u_prev, ns->u_prev, ns->v_prev);
-    advect(ns, 2, ns->v, ns->v_prev, ns->u_prev, ns->v_prev);
-    project(ns);
+    ns_advect(ns, 1, ns->u, ns->u_prev, ns->u_prev, ns->v_prev);
+    ns_advect(ns, 2, ns->v, ns->v_prev, ns->u_prev, ns->v_prev);
+    ns_project(ns);
 }
 
-static void density_step(navier_stokes_t *ns) {
+static void ns_density_step(ns_t *ns) {
     // TODO does swapping twice make sense?
     swap_array(&ns->dense_prev, &ns->dense);
-    diffuse(ns, 0, ns->diffusion, ns->dense, (const double **) ns->dense_prev);
+    ns_diffuse(ns, 0, ns->diffusion, ns->dense, (const double **) ns->dense_prev);
     swap_array(&ns->dense_prev, &ns->dense);
-    advect(ns, 0, ns->dense, ns->dense_prev, ns->u, ns->v);
+    ns_advect(ns, 0, ns->dense, ns->dense_prev, ns->u, ns->v);
 }
 
-static void add_source_to_target(const navier_stokes_t *ns, double **target, const double **source) {
+static void ns_add_source_to_target(const ns_t *ns, double **target, const double **source) {
     for (size_t y = 0; y < ns->world_height_bounds; ++y) {
         for (size_t x = 0; x < ns->world_width_bounds; ++x) {
             target[y][x] += ns->time_step * source[y][x];
@@ -149,7 +149,7 @@ static void add_source_to_target(const navier_stokes_t *ns, double **target, con
 }
 
 static void
-diffuse(const navier_stokes_t *ns, size_t bounds, double diffusion_value, double **target, const double **source) {
+ns_diffuse(const ns_t *ns, size_t bounds, double diffusion_value, double **target, const double **source) {
     const double a = ns->time_step * diffusion_value * (double) ns->world_width * (double) ns->world_height;
 
     //TODO 20? MAYBE ITERATIONS? thread???
@@ -162,11 +162,11 @@ diffuse(const navier_stokes_t *ns, size_t bounds, double diffusion_value, double
             }
         }
 
-        set_bnd(ns, bounds, target);
+        ns_set_bounds(ns, bounds, target);
     }
 }
 
-static void project(navier_stokes_t *ns) {
+static void ns_project(ns_t *ns) {
     // TODO ??? N CONTROLLA SOURCE
     double h = 1.0 / (double) ns->world_width;
 
@@ -178,8 +178,8 @@ static void project(navier_stokes_t *ns) {
         }
     }
 
-    set_bnd(ns, 0, ns->v_prev);
-    set_bnd(ns, 0, ns->u_prev);
+    ns_set_bounds(ns, 0, ns->v_prev);
+    ns_set_bounds(ns, 0, ns->u_prev);
 
     // TODO k = 20 wtf iterations?
     for (size_t k = 0; k < 20; k++) {
@@ -191,7 +191,7 @@ static void project(navier_stokes_t *ns) {
             }
         }
 
-        set_bnd(ns, 0, ns->u_prev);
+        ns_set_bounds(ns, 0, ns->u_prev);
     }
 
     for (size_t y = 1; y <= ns->world_height; ++y) {
@@ -201,11 +201,11 @@ static void project(navier_stokes_t *ns) {
         }
     }
 
-    set_bnd(ns, 1, ns->u);
-    set_bnd(ns, 2, ns->v);
+    ns_set_bounds(ns, 1, ns->u);
+    ns_set_bounds(ns, 2, ns->v);
 }
 
-static void advect(const navier_stokes_t *ns, size_t bounds, double **d, double **d0, double **u, double **v) {
+static void ns_advect(const ns_t *ns, size_t bounds, double **d, double **d0, double **u, double **v) {
     // TODO controlla source dato che utilizza N
     double dt0_width = ns->time_step * (double) ns->world_width;
     double dt0_height = ns->time_step * (double) ns->world_height;
@@ -243,10 +243,10 @@ static void advect(const navier_stokes_t *ns, size_t bounds, double **d, double 
         }
     }
 
-    set_bnd(ns, bounds, d);
+    ns_set_bounds(ns, bounds, d);
 }
 
-static void set_bnd(const navier_stokes_t *ns, size_t bounds, double **target) {
+static void ns_set_bounds(const ns_t *ns, size_t bounds, double **target) {
     for (size_t y = 1; y <= ns->world_height; ++y) {
         for (size_t x = 1; x <= ns->world_width; ++x) {
             target[y][0] = (bounds == 1) ? -target[y][1] : target[y][1];
