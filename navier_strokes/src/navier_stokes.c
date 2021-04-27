@@ -1,49 +1,56 @@
 #include "navier_stokes.h"
 #include <stdlib.h>
-#include "utils.h"
 
-typedef struct navier_stokes_t {
+typedef struct ns_t {
     // World
     size_t world_width;
     size_t world_width_bounds;
     size_t world_height;
     size_t world_height_bounds;
+
+    // Fluid
+    double viscosity;
+    double density;
+    double diffusion;
+
+    // Time
+    double time_step;
+
+    // World data
     double **u;
     double **u_prev;
     double **v;
     double **v_prev;
     double **dense;
     double **dense_prev;
-    // Fluid
-    double viscosity;
-    double density;
-    double diffusion;
-    // Time
-    double time_step;
-
-} navier_stokes_t;
+} ns_t;
 
 // PRIVATE DEFINITIONS
-static void velocity_step(navier_stokes_t *ns);
+static void ns_velocity_step(ns_t *ns);
 
-static void density_step(navier_stokes_t *ns);
+static void ns_density_step(ns_t *ns);
 
-static void add_source_to_target(const navier_stokes_t *ns, double **target, const double **source);
+static void ns_add_source_to_target(const ns_t *ns, double **target, const double **source);
 
 static void
-diffuse(const navier_stokes_t *ns, size_t bounds, double diffusion_value, double **target, const double **source);
+ns_diffuse(const ns_t *ns, size_t bounds, double diffusion_value, double **target, const double **source);
 
-static void project(navier_stokes_t *ns);
+static void ns_project(ns_t *ns);
 
-static void advect(const navier_stokes_t *ns, size_t bounds, double **d, double **d0, double **u, double **v);
+static void ns_advect(const ns_t *ns, size_t bounds, double **d, double **d0, double **u, double **v);
 
-static void set_bnd(const navier_stokes_t *ns, size_t bounds, double **target);
+static void ns_set_bounds(const ns_t *ns, size_t bounds, double **target);
+
+static void ns_swap_matrix(double ***x, double ***y);
+
+static bool is_valid_coordinate(const ns_t *ns, size_t x, size_t y);
 
 // PUBLIC
-navier_stokes_t *ns_create(size_t world_width, size_t world_height,
-                           double viscosity, double density, double diffusion,
-                           double time_step) {
-    navier_stokes_t *ns = (navier_stokes_t *) malloc(sizeof(navier_stokes_t));
+ns_t *ns_create(size_t world_width, size_t world_height,
+                double viscosity, double density, double diffusion,
+                double time_step) {
+    size_t i;
+    ns_t *ns = (ns_t *) malloc(sizeof(ns_t));
 
     // World
     ns->world_width = world_width;
@@ -57,99 +64,159 @@ navier_stokes_t *ns_create(size_t world_width, size_t world_height,
     // Time
     ns->time_step = time_step;
 
-    // Allocate u
+    // Allocate world data
     ns->u = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->u[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
-
-    // Allocate u_prev
     ns->u_prev = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->u_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
-
-    // Allocate v
     ns->v = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->v[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
-
-    // Allocate v_prev
     ns->v_prev = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->v_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
-
-    // Allocate dense
     ns->dense = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->dense[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
-
-    // Allocate dense_prev
     ns->dense_prev = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_width_bounds; ++i)
-        ns->dense_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double *));
+
+#pragma omp parallel for \
+    default(none) private(i) shared(ns)
+    for (i = 0; i < ns->world_height_bounds; ++i) {
+        ns->u[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+        ns->u_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+        ns->v[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+        ns->v_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+        ns->dense[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+        ns->dense_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+    }
 
     return ns;
 }
 
-void tick(navier_stokes_t *ns) {
-    velocity_step(ns);
-    density_step(ns);
+void ns_free(ns_t *ns) {
+    size_t i;
+
+#pragma omp parallel for \
+    default(none) private(i) shared(ns)
+    for (i = 0; i < ns->world_height_bounds; ++i) {
+        free(ns->u[i]);
+        free(ns->u_prev[i]);
+        free(ns->v[i]);
+        free(ns->v_prev[i]);
+        free(ns->dense[i]);
+        free(ns->dense_prev[i]);
+    }
+
+    free(ns->u);
+    free(ns->u_prev);
+    free(ns->v);
+    free(ns->v_prev);
+    free(ns->dense);
+    free(ns->dense_prev);
+
+    free(ns);
 }
 
-void increase_density(navier_stokes_t *ns, size_t x, size_t y) {
-    // TODO check bounds
-    ns->dense[y][x] += ns->density;
+void ns_tick(ns_t *ns) {
+    ns_velocity_step(ns);
+    ns_density_step(ns);
 }
 
-void apply_force(navier_stokes_t *ns, size_t cellX, size_t cellY, double vX, double vY) {
-    // TODO check bounds
-    const double dX = ns->u[cellX][cellY];
-    const double dY = ns->v[cellX][cellY];
+bool ns_increase_density(ns_t *ns, size_t x, size_t y) {
+    bool status = is_valid_coordinate(ns, x, y);
+    if (status)
+        ns->dense[y][x] += ns->density;
 
-    // TODO scrivere meglio
-    ns->u[cellX][cellY] = vX != 0 ? vX : dX;
-    ns->v[cellX][cellY] = vY != 0 ? vY : dY;
+    return status;
 }
 
-const double **get_world(const navier_stokes_t *ns) {
-    return (const double **) ns->dense;
+bool ns_apply_force(ns_t *ns, size_t cellX, size_t cellY, double vX, double vY) {
+    bool status = is_valid_coordinate(ns, cellX, cellY);
+    if (status) {
+        ns->u[cellY][cellX] = vX != 0 ? vX : ns->u[cellY][cellX];
+        ns->v[cellY][cellX] = vY != 0 ? vY : ns->v[cellY][cellX];
+    }
+
+    return status;
+}
+
+ns_world_t *ns_get_world(const ns_t *ns) {
+    size_t i, x, y;
+    ns_cell_t cell;
+    ns_world_t *world = (ns_world_t *) malloc(sizeof(ns_world_t));
+
+    world->world_width = ns->world_width;
+    world->world_width_bounds = ns->world_width_bounds;
+    world->world_height = ns->world_height;
+    world->world_height_bounds = ns->world_height_bounds;
+
+    world->world = (ns_cell_t **) calloc(ns->world_height_bounds, sizeof(ns_cell_t *));
+
+#pragma omp parallel for \
+    default(none) private(i) shared(ns, world)
+    for (i = 0; i < ns->world_height_bounds; ++i)
+        world->world[i] = (ns_cell_t *) calloc(ns->world_width_bounds, sizeof(ns_cell_t));
+
+#pragma omp parallel for \
+    default(none) private(y, x, cell) shared(ns, world)
+    for (y = 0; y < ns->world_height_bounds; ++y) {
+        for (x = 0; x < ns->world_width_bounds; ++x) {
+            cell.u = &ns->u[y][x];
+            cell.v = &ns->v[y][x];
+            cell.density = &ns->dense[y][x];
+
+            world->world[y][x] = cell;
+        }
+    }
+
+    return world;
+}
+
+void ns_free_world(ns_world_t *world) {
+    size_t i;
+
+#pragma omp parallel for \
+    default(none) private(i) shared(world)
+    for (i = 0; i < world->world_height_bounds; ++i) {
+        free(world->world[i]);
+    }
+
+    free(world->world);
+    free(world);
 }
 
 // PRIVATE
-static void velocity_step(navier_stokes_t *ns) {
-    add_source_to_target(ns, ns->u, (const double **) ns->u_prev);
-    add_source_to_target(ns, ns->v, (const double **) ns->v_prev);
+static void ns_velocity_step(ns_t *ns) {
+    ns_add_source_to_target(ns, ns->u, (const double **) ns->u_prev);
+    ns_add_source_to_target(ns, ns->v, (const double **) ns->v_prev);
 
-    swap_array(&ns->u_prev, &ns->u);
+    ns_swap_matrix(&ns->u_prev, &ns->u);
 
-    diffuse(ns, 1, ns->viscosity, ns->u, (const double **) ns->u_prev);
-    swap_array(&ns->v_prev, &ns->v);
-    diffuse(ns, 2, ns->viscosity, ns->v, (const double **) ns->v_prev);
-    project(ns);
-    swap_array(&ns->u_prev, &ns->u);
-    swap_array(&ns->v_prev, &ns->v);
-    advect(ns, 1, ns->u, ns->u_prev, ns->u_prev, ns->v_prev);
-    advect(ns, 2, ns->v, ns->v_prev, ns->u_prev, ns->v_prev);
-    project(ns);
+    ns_diffuse(ns, 1, ns->viscosity, ns->u, (const double **) ns->u_prev);
+    ns_swap_matrix(&ns->v_prev, &ns->v);
+    ns_diffuse(ns, 2, ns->viscosity, ns->v, (const double **) ns->v_prev);
+    ns_project(ns);
+    ns_swap_matrix(&ns->u_prev, &ns->u);
+    ns_swap_matrix(&ns->v_prev, &ns->v);
+    ns_advect(ns, 1, ns->u, ns->u_prev, ns->u_prev, ns->v_prev);
+    ns_advect(ns, 2, ns->v, ns->v_prev, ns->u_prev, ns->v_prev);
+    ns_project(ns);
 }
 
-static void density_step(navier_stokes_t *ns) {
-    // TODO does swapping twice make sense?
-    swap_array(&ns->dense_prev, &ns->dense);
-    diffuse(ns, 0, ns->diffusion, ns->dense, (const double **) ns->dense_prev);
-    swap_array(&ns->dense_prev, &ns->dense);
-    advect(ns, 0, ns->dense, ns->dense_prev, ns->u, ns->v);
+static void ns_density_step(ns_t *ns) {
+    ns_swap_matrix(&ns->dense_prev, &ns->dense);
+    ns_diffuse(ns, 0, ns->diffusion, ns->dense, (const double **) ns->dense_prev);
+    ns_swap_matrix(&ns->dense_prev, &ns->dense);
+    ns_advect(ns, 0, ns->dense, ns->dense_prev, ns->u, ns->v);
 }
 
-static void add_source_to_target(const navier_stokes_t *ns, double **target, const double **source) {
-    for (size_t y = 0; y < ns->world_height_bounds; ++y) {
-        for (size_t x = 0; x < ns->world_width_bounds; ++x) {
+static void ns_add_source_to_target(const ns_t *ns, double **target, const double **source) {
+    size_t x, y;
+
+#pragma omp parallel for collapse(2) \
+    default(none) private(y, x) shared(ns, target, source)
+    for (y = 0; y < ns->world_height_bounds; ++y) {
+        for (x = 0; x < ns->world_width_bounds; ++x) {
             target[y][x] += ns->time_step * source[y][x];
         }
     }
 }
 
 static void
-diffuse(const navier_stokes_t *ns, size_t bounds, double diffusion_value, double **target, const double **source) {
+ns_diffuse(const ns_t *ns, size_t bounds, double diffusion_value, double **target, const double **source) {
     const double a = ns->time_step * diffusion_value * (double) ns->world_width * (double) ns->world_height;
 
     //TODO 20? MAYBE ITERATIONS? thread???
@@ -162,11 +229,11 @@ diffuse(const navier_stokes_t *ns, size_t bounds, double diffusion_value, double
             }
         }
 
-        set_bnd(ns, bounds, target);
+        ns_set_bounds(ns, bounds, target);
     }
 }
 
-static void project(navier_stokes_t *ns) {
+static void ns_project(ns_t *ns) {
     // TODO ??? N CONTROLLA SOURCE
     double h = 1.0 / (double) ns->world_width;
 
@@ -178,8 +245,8 @@ static void project(navier_stokes_t *ns) {
         }
     }
 
-    set_bnd(ns, 0, ns->v_prev);
-    set_bnd(ns, 0, ns->u_prev);
+    ns_set_bounds(ns, 0, ns->v_prev);
+    ns_set_bounds(ns, 0, ns->u_prev);
 
     // TODO k = 20 wtf iterations?
     for (size_t k = 0; k < 20; k++) {
@@ -191,7 +258,7 @@ static void project(navier_stokes_t *ns) {
             }
         }
 
-        set_bnd(ns, 0, ns->u_prev);
+        ns_set_bounds(ns, 0, ns->u_prev);
     }
 
     for (size_t y = 1; y <= ns->world_height; ++y) {
@@ -201,52 +268,54 @@ static void project(navier_stokes_t *ns) {
         }
     }
 
-    set_bnd(ns, 1, ns->u);
-    set_bnd(ns, 2, ns->v);
+    ns_set_bounds(ns, 1, ns->u);
+    ns_set_bounds(ns, 2, ns->v);
 }
 
-static void advect(const navier_stokes_t *ns, size_t bounds, double **d, double **d0, double **u, double **v) {
-    // TODO controlla source dato che utilizza N
+static void ns_advect(const ns_t *ns, size_t bounds, double **d, double **d0, double **u, double **v) {
+    size_t x, y;
+    double xx, yy;
     double dt0_width = ns->time_step * (double) ns->world_width;
     double dt0_height = ns->time_step * (double) ns->world_height;
 
-    // TODO Cambia i nomi please
-    for (size_t _y = 1; _y <= ns->world_height; ++_y) {
-        for (size_t _x = 1; _x <= ns->world_width; ++_x) {
-            double x = (double) _x - dt0_width * u[_y][_x];
-            double y = (double) _y - dt0_height * v[_y][_x];
+#pragma omp parallel for collapse(2) \
+    default(none) private(y, x, yy, xx) shared(ns, dt0_width, dt0_height, u, v, d, d0)
+    for (y = 1; y <= ns->world_height; ++y) {
+        for (x = 1; x <= ns->world_width; ++x) {
+            xx = (double) x - dt0_width * u[y][x];
+            yy = (double) y - dt0_height * v[y][x];
 
-            // Check x
-            if (x < 0.5)
-                x = 0.5;
-            if (x > (double) ns->world_width + 0.5)
-                x = (double) ns->world_width + 0.5;
-            size_t x0 = (size_t) x;
+            // Check xx
+            if (xx < 0.5)
+                xx = 0.5;
+            if (xx > (double) ns->world_width + 0.5)
+                xx = (double) ns->world_width + 0.5;
+            size_t x0 = (size_t) xx;
             size_t x1 = x0 + 1;
 
-            // Check y
-            if (y < 0.5)
-                y = 0.5;
-            if (y > (double) ns->world_height + 0.5)
-                y = (double) ns->world_height + 0.5;
-            size_t y0 = (size_t) y;
+            // Check yy
+            if (yy < 0.5)
+                yy = 0.5;
+            if (yy > (double) ns->world_height + 0.5)
+                yy = (double) ns->world_height + 0.5;
+            size_t y0 = (size_t) yy;
             size_t y1 = y0 + 1;
 
 
-            double s1 = x - (double) x0;
+            double s1 = xx - (double) x0;
             double s0 = 1 - s1;
-            double t1 = y - (double) y0;
+            double t1 = yy - (double) y0;
             double t0 = 1 - t1;
 
-            d[_y][_x] = s0 * (t0 * d0[y0][x0] + t1 * d0[y1][x0])
-                        + s1 * (t0 * d0[y0][x1] + t1 * d0[y1][x1]);
+            d[y][x] = s0 * (t0 * d0[y0][x0] + t1 * d0[y1][x0])
+                      + s1 * (t0 * d0[y0][x1] + t1 * d0[y1][x1]);
         }
     }
 
-    set_bnd(ns, bounds, d);
+    ns_set_bounds(ns, bounds, d);
 }
 
-static void set_bnd(const navier_stokes_t *ns, size_t bounds, double **target) {
+static void ns_set_bounds(const ns_t *ns, size_t bounds, double **target) {
     for (size_t y = 1; y <= ns->world_height; ++y) {
         for (size_t x = 1; x <= ns->world_width; ++x) {
             target[y][0] = (bounds == 1) ? -target[y][1] : target[y][1];
@@ -261,4 +330,15 @@ static void set_bnd(const navier_stokes_t *ns, size_t bounds, double **target) {
     target[0][ns->world_width + 1] = 0.5 * (target[0][ns->world_width] + target[1][ns->world_width + 1]);
     target[ns->world_height + 1][ns->world_width + 1] =
             0.5 * (target[ns->world_height + 1][ns->world_width] + target[ns->world_height][ns->world_width + 1]);
+}
+
+static void ns_swap_matrix(double ***x, double ***y) {
+    double **tmp = *x;
+    *x = *y;
+    *y = tmp;
+}
+
+static bool is_valid_coordinate(const ns_t *ns, size_t x, size_t y) {
+    return x >= 0 && x < ns->world_width_bounds
+           && y >= 0 && y < ns->world_height_bounds;
 }
