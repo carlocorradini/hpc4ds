@@ -2,6 +2,7 @@
 #define _NAVIER_STOKES_H
 
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef struct ns_t ns_t;
 
@@ -27,9 +28,9 @@ void ns_free(ns_t *ns);
 
 void ns_tick(ns_t *ns);
 
-void ns_increase_density(ns_t *ns, size_t x, size_t y);
+bool ns_increase_density(ns_t *ns, size_t x, size_t y);
 
-void ns_apply_force(ns_t *ns, size_t cellX, size_t cellY, double vX, double vY);
+bool ns_apply_force(ns_t *ns, size_t cellX, size_t cellY, double vX, double vY);
 
 ns_world_t *ns_get_world(const ns_t *ns);
 

@@ -43,6 +43,8 @@ static void ns_set_bounds(const ns_t *ns, size_t bounds, double **target);
 
 static void ns_swap_matrix(double ***x, double ***y);
 
+static bool is_valid_coordinate(const ns_t *ns, size_t x, size_t y);
+
 // PUBLIC
 ns_t *ns_create(size_t world_width, size_t world_height,
                 double viscosity, double density, double diffusion,
@@ -118,19 +120,22 @@ void ns_tick(ns_t *ns) {
     ns_density_step(ns);
 }
 
-void ns_increase_density(ns_t *ns, size_t x, size_t y) {
-    // TODO check bounds
-    ns->dense[y][x] += ns->density;
+bool ns_increase_density(ns_t *ns, size_t x, size_t y) {
+    bool status = is_valid_coordinate(ns, x, y);
+    if (status)
+        ns->dense[y][x] += ns->density;
+
+    return status;
 }
 
-void ns_apply_force(ns_t *ns, size_t cellX, size_t cellY, double vX, double vY) {
-    // TODO check bounds
-    const double dX = ns->u[cellX][cellY];
-    const double dY = ns->v[cellX][cellY];
+bool ns_apply_force(ns_t *ns, size_t cellX, size_t cellY, double vX, double vY) {
+    bool status = is_valid_coordinate(ns, cellX, cellY);
+    if (status) {
+        ns->u[cellY][cellX] = vX != 0 ? vX : ns->u[cellY][cellX];
+        ns->v[cellY][cellX] = vY != 0 ? vY : ns->v[cellY][cellX];
+    }
 
-    // TODO scrivere meglio
-    ns->u[cellX][cellY] = vX != 0 ? vX : dX;
-    ns->v[cellX][cellY] = vY != 0 ? vY : dY;
+    return status;
 }
 
 ns_world_t *ns_get_world(const ns_t *ns) {
@@ -316,4 +321,9 @@ static void ns_swap_matrix(double ***x, double ***y) {
     double **tmp = *x;
     *x = *y;
     *y = tmp;
+}
+
+static bool is_valid_coordinate(const ns_t *ns, size_t x, size_t y) {
+    return x >= 0 && x < ns->world_width_bounds
+           && y >= 0 && y < ns->world_height_bounds;
 }
