@@ -94,6 +94,25 @@ ns_t *ns_create(size_t world_width, size_t world_height,
     return ns;
 }
 
+void ns_free(ns_t *ns) {
+    for (size_t i = 0; i < ns->world_height_bounds; ++i) {
+        free(ns->u[i]);
+        free(ns->u_prev[i]);
+        free(ns->v[i]);
+        free(ns->v_prev[i]);
+        free(ns->dense[i]);
+        free(ns->dense_prev[i]);
+    }
+    free(ns->u);
+    free(ns->u_prev);
+    free(ns->v);
+    free(ns->v_prev);
+    free(ns->dense);
+    free(ns->dense_prev);
+
+    free(ns);
+}
+
 void ns_tick(ns_t *ns) {
     ns_velocity_step(ns);
     ns_density_step(ns);

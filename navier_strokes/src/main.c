@@ -35,6 +35,7 @@ int main(void) {
 
     fclose(fp);
     ns_free_world(world);
+    ns_free(ns);
 
     return EXIT_SUCCESS;
 }

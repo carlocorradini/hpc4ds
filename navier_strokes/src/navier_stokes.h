@@ -23,6 +23,8 @@ ns_t *ns_create(size_t world_width, size_t world_height,
                 double viscosity, double density, double diffusion,
                 double time_step);
 
+void ns_free(ns_t *ns);
+
 void ns_tick(ns_t *ns);
 
 void ns_increase_density(ns_t *ns, size_t x, size_t y);
