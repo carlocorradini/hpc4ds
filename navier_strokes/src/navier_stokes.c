@@ -119,14 +119,14 @@ static void velocity_step(navier_stokes_t *ns) {
     add_source_to_target(ns, ns->u, (const double **) ns->u_prev);
     add_source_to_target(ns, ns->v, (const double **) ns->v_prev);
 
-    swap_array(ns->u_prev, ns->u, ns->world_width_bounds, ns->world_height_bounds);
+    swap_array(&ns->u_prev, &ns->u);
 
     diffuse(ns, 1, ns->viscosity, ns->u, (const double **) ns->u_prev);
-    swap_array(ns->v_prev, ns->v, ns->world_width_bounds, ns->world_height_bounds);
+    swap_array(&ns->v_prev, &ns->v);
     diffuse(ns, 2, ns->viscosity, ns->v, (const double **) ns->v_prev);
     project(ns);
-    swap_array(ns->u_prev, ns->u, ns->world_width_bounds, ns->world_height_bounds);
-    swap_array(ns->v_prev, ns->v, ns->world_width_bounds, ns->world_height_bounds);
+    swap_array(&ns->u_prev, &ns->u);
+    swap_array(&ns->v_prev, &ns->v);
     advect(ns, 1, ns->u, ns->u_prev, ns->u_prev, ns->v_prev);
     advect(ns, 2, ns->v, ns->v_prev, ns->u_prev, ns->v_prev);
     project(ns);
@@ -134,9 +134,9 @@ static void velocity_step(navier_stokes_t *ns) {
 
 static void density_step(navier_stokes_t *ns) {
     // TODO does swapping twice make sense?
-    swap_array(ns->dense_prev, ns->dense, ns->world_width_bounds, ns->world_height_bounds);
+    swap_array(&ns->dense_prev, &ns->dense);
     diffuse(ns, 0, ns->diffusion, ns->dense, (const double **) ns->dense_prev);
-    swap_array(ns->dense_prev, ns->dense, ns->world_width_bounds, ns->world_height_bounds);
+    swap_array(&ns->dense_prev, &ns->dense);
     advect(ns, 0, ns->dense, ns->dense_prev, ns->u, ns->v);
 }
 

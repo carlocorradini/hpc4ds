@@ -3,6 +3,6 @@
 
 #include <stddef.h>
 
-void swap_array(double **source, double **destination, size_t width, size_t height);
+void swap_array(double ***x, double ***y);
 
 #endif
