@@ -4,12 +4,17 @@
 
 #define WORLD_WIDTH 80
 #define WORLD_HEIGHT 80
-#define TICKS 50
+#define FLUID_VISCOSITY 0.0001
+#define FLUID_DENSITY 10
+#define FLUID_DIFFUSION 0.0001
+
+#define NS_TIME_STEP 0.01
+#define NS_TICKS 50
 
 int main(void) {
     ns_t *ns = ns_create(WORLD_WIDTH, WORLD_HEIGHT,
-                         0.0001, 10, 0.0001,
-                         0.01);
+                         FLUID_VISCOSITY, FLUID_DENSITY, FLUID_DIFFUSION,
+                         NS_TIME_STEP);
 
     ns_increase_density(ns, 41, 41);
     ns_increase_density(ns, 65, 20);
@@ -19,7 +24,7 @@ int main(void) {
     fprintf(fp, "x, y, d\n");
 
     ns_world_t *world = ns_get_world(ns);
-    for (size_t i = 0; i < TICKS + 1; ++i) {
+    for (size_t i = 0; i < NS_TICKS + 1; ++i) {
         if (i != 0) ns_tick(ns);
 
         for (size_t y = 0; y < world->world_height_bounds; ++y) {
