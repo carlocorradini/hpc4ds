@@ -49,6 +49,7 @@ static bool is_valid_coordinate(const ns_t *ns, size_t x, size_t y);
 ns_t *ns_create(size_t world_width, size_t world_height,
                 double viscosity, double density, double diffusion,
                 double time_step) {
+    size_t i;
     ns_t *ns = (ns_t *) malloc(sizeof(ns_t));
 
     // World
@@ -63,41 +64,34 @@ ns_t *ns_create(size_t world_width, size_t world_height,
     // Time
     ns->time_step = time_step;
 
-    // Allocate u
+    // Allocate world data
     ns->u = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_height_bounds; ++i)
-        ns->u[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
-
-    // Allocate u_prev
     ns->u_prev = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_height_bounds; ++i)
-        ns->u_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
-
-    // Allocate v
     ns->v = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_height_bounds; ++i)
-        ns->v[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
-
-    // Allocate v_prev
     ns->v_prev = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_height_bounds; ++i)
-        ns->v_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
-
-    // Allocate dense
     ns->dense = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_height_bounds; ++i)
-        ns->dense[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
-
-    // Allocate dense_prev
     ns->dense_prev = (double **) calloc(ns->world_height_bounds, sizeof(double *));
-    for (size_t i = 0; i < ns->world_height_bounds; ++i)
+
+#pragma omp parallel for \
+    default(none) private(i) shared(ns)
+    for (i = 0; i < ns->world_height_bounds; ++i) {
+        ns->u[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+        ns->u_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+        ns->v[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+        ns->v_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+        ns->dense[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
         ns->dense_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+    }
 
     return ns;
 }
 
 void ns_free(ns_t *ns) {
-    for (size_t i = 0; i < ns->world_height_bounds; ++i) {
+    size_t i;
+
+#pragma omp parallel for \
+    default(none) private(i) shared(ns)
+    for (i = 0; i < ns->world_height_bounds; ++i) {
         free(ns->u[i]);
         free(ns->u_prev[i]);
         free(ns->v[i]);
@@ -105,6 +99,7 @@ void ns_free(ns_t *ns) {
         free(ns->dense[i]);
         free(ns->dense_prev[i]);
     }
+
     free(ns->u);
     free(ns->u_prev);
     free(ns->v);
@@ -139,6 +134,8 @@ bool ns_apply_force(ns_t *ns, size_t cellX, size_t cellY, double vX, double vY) 
 }
 
 ns_world_t *ns_get_world(const ns_t *ns) {
+    size_t i, x, y;
+    ns_cell_t cell;
     ns_world_t *world = (ns_world_t *) malloc(sizeof(ns_world_t));
 
     world->world_width = ns->world_width;
@@ -147,12 +144,20 @@ ns_world_t *ns_get_world(const ns_t *ns) {
     world->world_height_bounds = ns->world_height_bounds;
 
     world->world = (ns_cell_t **) calloc(ns->world_height_bounds, sizeof(ns_cell_t *));
-    for (size_t i = 0; i < ns->world_height_bounds; ++i)
+
+#pragma omp parallel for \
+    default(none) private(i) shared(ns, world)
+    for (i = 0; i < ns->world_height_bounds; ++i)
         world->world[i] = (ns_cell_t *) calloc(ns->world_width_bounds, sizeof(ns_cell_t));
 
-    for (size_t y = 0; y < ns->world_height_bounds; ++y) {
-        for (size_t x = 0; x < ns->world_width_bounds; ++x) {
-            ns_cell_t cell = {.u=&ns->u[y][x], .v=&ns->v[y][x], .density=&ns->dense[y][x]};
+#pragma omp parallel for \
+    default(none) private(y, x, cell) shared(ns, world)
+    for (y = 0; y < ns->world_height_bounds; ++y) {
+        for (x = 0; x < ns->world_width_bounds; ++x) {
+            cell.u = &ns->u[y][x];
+            cell.v = &ns->v[y][x];
+            cell.density = &ns->dense[y][x];
+
             world->world[y][x] = cell;
         }
     }
@@ -161,9 +166,14 @@ ns_world_t *ns_get_world(const ns_t *ns) {
 }
 
 void ns_free_world(ns_world_t *world) {
-    for (size_t i = 0; i < world->world_height_bounds; ++i) {
+    size_t i;
+
+#pragma omp parallel for \
+    default(none) private(i) shared(world)
+    for (i = 0; i < world->world_height_bounds; ++i) {
         free(world->world[i]);
     }
+
     free(world->world);
     free(world);
 }
@@ -187,7 +197,6 @@ static void ns_velocity_step(ns_t *ns) {
 }
 
 static void ns_density_step(ns_t *ns) {
-    // TODO does swapping twice make sense?
     ns_swap_matrix(&ns->dense_prev, &ns->dense);
     ns_diffuse(ns, 0, ns->diffusion, ns->dense, (const double **) ns->dense_prev);
     ns_swap_matrix(&ns->dense_prev, &ns->dense);
@@ -195,8 +204,12 @@ static void ns_density_step(ns_t *ns) {
 }
 
 static void ns_add_source_to_target(const ns_t *ns, double **target, const double **source) {
-    for (size_t y = 0; y < ns->world_height_bounds; ++y) {
-        for (size_t x = 0; x < ns->world_width_bounds; ++x) {
+    size_t x, y;
+
+#pragma omp parallel for collapse(2) \
+    default(none) private(y, x) shared(ns, target, source)
+    for (y = 0; y < ns->world_height_bounds; ++y) {
+        for (x = 0; x < ns->world_width_bounds; ++x) {
             target[y][x] += ns->time_step * source[y][x];
         }
     }
@@ -260,40 +273,42 @@ static void ns_project(ns_t *ns) {
 }
 
 static void ns_advect(const ns_t *ns, size_t bounds, double **d, double **d0, double **u, double **v) {
-    // TODO controlla source dato che utilizza N
+    size_t x, y;
+    double xx, yy;
     double dt0_width = ns->time_step * (double) ns->world_width;
     double dt0_height = ns->time_step * (double) ns->world_height;
 
-    // TODO Cambia i nomi please
-    for (size_t _y = 1; _y <= ns->world_height; ++_y) {
-        for (size_t _x = 1; _x <= ns->world_width; ++_x) {
-            double x = (double) _x - dt0_width * u[_y][_x];
-            double y = (double) _y - dt0_height * v[_y][_x];
+#pragma omp parallel for collapse(2) \
+    default(none) private(y, x, yy, xx) shared(ns, dt0_width, dt0_height, u, v, d, d0)
+    for (y = 1; y <= ns->world_height; ++y) {
+        for (x = 1; x <= ns->world_width; ++x) {
+            xx = (double) x - dt0_width * u[y][x];
+            yy = (double) y - dt0_height * v[y][x];
 
-            // Check x
-            if (x < 0.5)
-                x = 0.5;
-            if (x > (double) ns->world_width + 0.5)
-                x = (double) ns->world_width + 0.5;
-            size_t x0 = (size_t) x;
+            // Check xx
+            if (xx < 0.5)
+                xx = 0.5;
+            if (xx > (double) ns->world_width + 0.5)
+                xx = (double) ns->world_width + 0.5;
+            size_t x0 = (size_t) xx;
             size_t x1 = x0 + 1;
 
-            // Check y
-            if (y < 0.5)
-                y = 0.5;
-            if (y > (double) ns->world_height + 0.5)
-                y = (double) ns->world_height + 0.5;
-            size_t y0 = (size_t) y;
+            // Check yy
+            if (yy < 0.5)
+                yy = 0.5;
+            if (yy > (double) ns->world_height + 0.5)
+                yy = (double) ns->world_height + 0.5;
+            size_t y0 = (size_t) yy;
             size_t y1 = y0 + 1;
 
 
-            double s1 = x - (double) x0;
+            double s1 = xx - (double) x0;
             double s0 = 1 - s1;
-            double t1 = y - (double) y0;
+            double t1 = yy - (double) y0;
             double t0 = 1 - t1;
 
-            d[_y][_x] = s0 * (t0 * d0[y0][x0] + t1 * d0[y1][x0])
-                        + s1 * (t0 * d0[y0][x1] + t1 * d0[y1][x1]);
+            d[y][x] = s0 * (t0 * d0[y0][x0] + t1 * d0[y1][x0])
+                      + s1 * (t0 * d0[y0][x1] + t1 * d0[y1][x1]);
         }
     }
 

@@ -7,8 +7,13 @@ set(CMAKE_C_COMPILER mpicc)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wshadow -Wdouble-promotion -Wformat -Wformat-security -Wundef -Wconversion -fno-common -pedantic")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
 
+# MPI
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
+
+# Open MP
+find_package(OpenMP REQUIRED)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
 
 # Headers
 file(GLOB HEADER_FILES src/*.h)
