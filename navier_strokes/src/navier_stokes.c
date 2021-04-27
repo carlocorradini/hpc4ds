@@ -97,7 +97,7 @@ void tick(navier_stokes_t *ns) {
 
 void increase_density(navier_stokes_t *ns, size_t x, size_t y) {
     // TODO check bounds
-    ns->dense[x][y] += ns->density;
+    ns->dense[y][x] += ns->density;
 }
 
 void apply_force(navier_stokes_t *ns, size_t cellX, size_t cellY, double vX, double vY) {

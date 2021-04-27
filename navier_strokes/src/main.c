@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <mpi.h>
 #include "navier_stokes.h"
 
 int main(void) {
