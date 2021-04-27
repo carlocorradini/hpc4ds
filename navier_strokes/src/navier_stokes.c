@@ -16,7 +16,7 @@ typedef struct ns_t {
     // Time
     double time_step;
 
-    // World DATA
+    // World data
     double **u;
     double **u_prev;
     double **v;

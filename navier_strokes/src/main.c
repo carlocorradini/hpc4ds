@@ -17,6 +17,7 @@ int main(void) {
 
     FILE *fp = fopen("output.txt", "w");
     fprintf(fp, "x, y, d\n");
+
     for (size_t i = 0; i < TICKS + 1; ++i) {
         if (i != 0) ns_tick(ns);
 
@@ -33,6 +34,7 @@ int main(void) {
         }
         fprintf(fp, "\n");
     }
+
     fclose(fp);
 
     return EXIT_SUCCESS;
