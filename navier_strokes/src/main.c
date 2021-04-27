@@ -12,6 +12,7 @@
 #define NS_TICKS 50
 
 int main(void) {
+    // World definition
     ns_t *ns = ns_create(WORLD_WIDTH, WORLD_HEIGHT,
                          FLUID_VISCOSITY, FLUID_DENSITY, FLUID_DIFFUSION,
                          NS_TIME_STEP);
@@ -19,10 +20,11 @@ int main(void) {
     ns_increase_density(ns, 41, 41);
     ns_increase_density(ns, 65, 20);
     ns_increase_density(ns, 15, 20);
+    // END
 
+    // PRINT
     FILE *fp = fopen("output.txt", "w");
     fprintf(fp, "x, y, d\n");
-
     ns_world_t *world = ns_get_world(ns);
     for (size_t i = 0; i < NS_TICKS + 1; ++i) {
         if (i != 0) ns_tick(ns);
@@ -37,6 +39,7 @@ int main(void) {
         }
         fprintf(fp, "\n");
     }
+    // END
 
     fclose(fp);
     ns_free_world(world);
