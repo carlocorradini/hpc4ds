@@ -30,7 +30,7 @@ void ns_tick(ns_t *ns);
 
 bool ns_increase_density(ns_t *ns, size_t x, size_t y);
 
-bool ns_apply_force(ns_t *ns, size_t cellX, size_t cellY, double vX, double vY);
+bool ns_apply_force(ns_t *ns, size_t x, size_t y, double v_x, double v_y);
 
 ns_world_t *ns_get_world(const ns_t *ns);
 

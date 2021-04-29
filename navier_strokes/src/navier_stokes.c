@@ -39,6 +39,13 @@ static void ns_project(ns_t *ns);
 
 static void ns_advect(const ns_t *ns, size_t bounds, double **d, double **d0, double **u, double **v);
 
+/**
+ * Check for bounces on bounds.
+ *
+ * @param ns Navier Stokes struct pointer
+ * @param bounds Bounds value
+ * @param target World data to analyze
+ */
 static void ns_set_bounds(const ns_t *ns, size_t bounds, double **target);
 
 static void ns_swap_matrix(double ***x, double ***y);
@@ -123,11 +130,11 @@ bool ns_increase_density(ns_t *ns, size_t x, size_t y) {
     return status;
 }
 
-bool ns_apply_force(ns_t *ns, size_t cellX, size_t cellY, double vX, double vY) {
-    bool status = is_valid_coordinate(ns, cellX, cellY);
+bool ns_apply_force(ns_t *ns, size_t x, size_t y, double v_x, double v_y) {
+    bool status = is_valid_coordinate(ns, x, y);
     if (status) {
-        ns->u[cellY][cellX] = vX != 0 ? vX : ns->u[cellY][cellX];
-        ns->v[cellY][cellX] = vY != 0 ? vY : ns->v[cellY][cellX];
+        ns->u[y][x] = v_x != 0 ? v_x : ns->u[y][x];
+        ns->v[y][x] = v_y != 0 ? v_y : ns->v[y][x];
     }
 
     return status;
@@ -234,11 +241,12 @@ ns_diffuse(const ns_t *ns, size_t bounds, double diffusion_value, double **targe
 }
 
 static void ns_project(ns_t *ns) {
+    size_t x, y;
     // TODO ??? N CONTROLLA SOURCE
     double h = 1.0 / (double) ns->world_width;
 
-    for (size_t y = 1; y <= ns->world_height; ++y) {
-        for (size_t x = 1; x <= ns->world_width; ++x) {
+    for (y = 1; y <= ns->world_height; ++y) {
+        for (x = 1; x <= ns->world_width; ++x) {
             ns->v_prev[y][x] = -0.5 * h
                                * (ns->u[y][x + 1] - ns->u[y][x - 1] + ns->v[y + 1][x] - ns->v[y - 1][x]);
             ns->u_prev[y][x] = 0;
@@ -250,19 +258,22 @@ static void ns_project(ns_t *ns) {
 
     // TODO k = 20 wtf iterations?
     for (size_t k = 0; k < 20; k++) {
-        for (size_t y = 1; y <= ns->world_height; ++y) {
-            for (size_t x = 1; x <= ns->world_width; ++x) {
+        for (y = 1; y <= ns->world_height; ++y) {
+            for (x = 1; x <= ns->world_width; ++x) {
                 ns->u_prev[y][x] =
-                        (ns->v_prev[y][x] + ns->u_prev[y][x - 1] + ns->u_prev[y][x + 1] + ns->u_prev[y - 1][x] +
-                         ns->u_prev[y + 1][x]) / 4;
+                        (ns->v_prev[y][x]
+                         + ns->u_prev[y][x - 1] + ns->u_prev[y][x + 1] + ns->u_prev[y - 1][x] + ns->u_prev[y + 1][x])
+                        / 4;
             }
         }
 
         ns_set_bounds(ns, 0, ns->u_prev);
     }
 
-    for (size_t y = 1; y <= ns->world_height; ++y) {
-        for (size_t x = 1; x <= ns->world_width; ++x) {
+#pragma omp parallel for collapse(2) \
+    default(none) private(y, x) shared(ns, h)
+    for (y = 1; y <= ns->world_height; ++y) {
+        for (x = 1; x <= ns->world_width; ++x) {
             ns->u[y][x] -= 0.5 * (ns->u_prev[y][x + 1] - ns->u_prev[y][x - 1]) / h;
             ns->v[y][x] -= 0.5 * (ns->u_prev[y + 1][x] - ns->u_prev[y - 1][x]) / h;
         }
@@ -273,13 +284,13 @@ static void ns_project(ns_t *ns) {
 }
 
 static void ns_advect(const ns_t *ns, size_t bounds, double **d, double **d0, double **u, double **v) {
-    size_t x, y;
-    double xx, yy;
+    size_t x, y, x0, x1, y0, y1;
+    double xx, yy, s0, s1, t0, t1;
     double dt0_width = ns->time_step * (double) ns->world_width;
     double dt0_height = ns->time_step * (double) ns->world_height;
 
 #pragma omp parallel for collapse(2) \
-    default(none) private(y, x, yy, xx) shared(ns, dt0_width, dt0_height, u, v, d, d0)
+    default(none) private(y, x, yy, xx, x0, x1, y0, y1, s0, s1, t0, t1) shared(ns, dt0_width, dt0_height, u, v, d, d0)
     for (y = 1; y <= ns->world_height; ++y) {
         for (x = 1; x <= ns->world_width; ++x) {
             xx = (double) x - dt0_width * u[y][x];
@@ -290,22 +301,22 @@ static void ns_advect(const ns_t *ns, size_t bounds, double **d, double **d0, do
                 xx = 0.5;
             if (xx > (double) ns->world_width + 0.5)
                 xx = (double) ns->world_width + 0.5;
-            size_t x0 = (size_t) xx;
-            size_t x1 = x0 + 1;
+            x0 = (size_t) xx;
+            x1 = x0 + 1;
 
             // Check yy
             if (yy < 0.5)
                 yy = 0.5;
             if (yy > (double) ns->world_height + 0.5)
                 yy = (double) ns->world_height + 0.5;
-            size_t y0 = (size_t) yy;
-            size_t y1 = y0 + 1;
+            y0 = (size_t) yy;
+            y1 = y0 + 1;
 
 
-            double s1 = xx - (double) x0;
-            double s0 = 1 - s1;
-            double t1 = yy - (double) y0;
-            double t0 = 1 - t1;
+            s1 = xx - (double) x0;
+            s0 = 1 - s1;
+            t1 = yy - (double) y0;
+            t0 = 1 - t1;
 
             d[y][x] = s0 * (t0 * d0[y0][x0] + t1 * d0[y1][x0])
                       + s1 * (t0 * d0[y0][x1] + t1 * d0[y1][x1]);
