@@ -9,7 +9,7 @@
 #define FLUID_DIFFUSION 0.0001
 
 #define NS_TIME_STEP 0.01
-#define NS_TICKS 50
+#define NS_TICKS 50     // this actually produced NS_TICKS + 1 in the final output
 
 int main(void) {
     // World definition
@@ -24,7 +24,6 @@ int main(void) {
 
     // PRINT
     FILE *fp = fopen("output.txt", "w");
-    fprintf(fp, "x, y, d\n");
     ns_world_t *world = ns_get_world(ns);
     for (size_t i = 0; i < NS_TICKS + 1; ++i) {
         if (i != 0) ns_tick(ns);
@@ -37,7 +36,7 @@ int main(void) {
                 fprintf(fp, "%ld, %ld, %d\n", x, y, (int) density);
             }
         }
-        fprintf(fp, "\n");
+        // fprintf(fp, "\n"); // may not be needed, I'll decide later
     }
     // END
 
