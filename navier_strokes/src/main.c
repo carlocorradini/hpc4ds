@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include "navier_stokes.h"
 
-#define WORLD_WIDTH 80
-#define WORLD_HEIGHT 80
+#define WORLD_WIDTH 100
+#define WORLD_HEIGHT 100
 #define FLUID_VISCOSITY 0.0001
 #define FLUID_DENSITY 10
 #define FLUID_DIFFUSION 0.0001
@@ -33,9 +33,15 @@ int main(void) {
                 u_int64_t density = (u_int64_t) (255 * *world->world[y][x].density);
                 if (density >= 255) density = 255;
 
-                fprintf(fp, "%ld, %ld, %d\n", x, y, (int) density);
+                // To see the ASCII grid
+                fprintf(fp, "%3d ", (int) density);
+                
+                // To print in output.txt correctly
+                //fprintf(fp, "%ld, %ld, %d\n", x, y, (int) density);
             }
         }
+        // To see the ASCII grid
+        fprintf(fp, "\n");
     }
     // END
 
