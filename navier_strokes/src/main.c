@@ -9,7 +9,7 @@
 #define FLUID_DIFFUSION 0.0001
 
 #define NS_TIME_STEP 0.01
-#define NS_TICKS 50     // this actually produced NS_TICKS + 1 in the final output
+#define NS_TICKS 50  // Produces NS_TICKS + 1 in the final output
 
 int main(void) {
     // World definition
@@ -30,13 +30,12 @@ int main(void) {
 
         for (size_t y = 0; y < world->world_height_bounds; ++y) {
             for (size_t x = 0; x < world->world_width_bounds; ++x) {
-                u_int8_t density = (u_int8_t) (255 * *world->world[y][x].density);
+                u_int64_t density = (u_int64_t) (255 * *world->world[y][x].density);
                 if (density >= 255) density = 255;
 
                 fprintf(fp, "%ld, %ld, %d\n", x, y, (int) density);
             }
         }
-        // fprintf(fp, "\n"); // may not be needed, I'll decide later
     }
     // END
 

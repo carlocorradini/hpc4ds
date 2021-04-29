@@ -22,4 +22,3 @@ file(GLOB SOURCE_FILES src/*.c)
 
 # Executable
 add_executable(navierstokes ${SOURCE_FILES} ${HEADER_FILES})
-target_link_libraries(navierstokes m)
