@@ -34,10 +34,10 @@ int main(void) {
                 if (density >= 255) density = 255;
 
                 // To see the ASCII grid
-                fprintf(fp, "%3d ", (int) density);
+                //fprintf(fp, "%3d ", (int) density);
                 
                 // To print in output.txt correctly
-                //fprintf(fp, "%ld, %ld, %d\n", x, y, (int) density);
+                fprintf(fp, "%ld, %ld, %d\n", x, y, (int) density);
             }
         }
         // To see the ASCII grid
