@@ -41,7 +41,7 @@ int main(void) {
             }
         }
         // To see the ASCII grid
-        fprintf(fp, "\n");
+        // fprintf(fp, "\n");
     }
     // END
 
