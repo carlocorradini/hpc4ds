@@ -25,11 +25,10 @@ public class NavierStokesSolver {
         try {
             Files.deleteIfExists(outFile);
             Files.createFile(outFile);
+            printFile();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        printFile();
     }
 
     void clear() {
@@ -63,6 +62,7 @@ public class NavierStokesSolver {
     void tick(double dt, double visc, double diff) {
         vel_step(u, v, u_prev, v_prev, visc, dt);
         dens_step(dense, dense_prev, u, v, diff, dt);
+        printFile();
     }
 
     void printFile() {
@@ -81,7 +81,7 @@ public class NavierStokesSolver {
         }
 
         try {
-            Files.write(outFile, Collections.singleton(buffer), StandardCharsets.UTF_8, StandardOpenOption.APPEND);
+            Files.write(outFile, Collections.singleton(buffer), StandardOpenOption.APPEND);
         } catch (IOException e) {
             e.printStackTrace();
         }
