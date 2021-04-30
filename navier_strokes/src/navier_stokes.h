@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#define NS_MAX_FORCE_VELOCITY 120.0
+
 typedef struct ns_t ns_t;
 
 typedef struct ns_cell_t {

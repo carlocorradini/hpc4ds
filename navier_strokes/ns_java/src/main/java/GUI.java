@@ -77,7 +77,6 @@ public class GUI extends JPanel implements ActionListener, ItemListener {
         this.add(rainbow);
         this.add(fire);
 
-
         fluid.addItemListener(this);
         vector.addItemListener(this);
         right.addItemListener(this);

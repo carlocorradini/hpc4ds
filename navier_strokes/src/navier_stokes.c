@@ -1,5 +1,6 @@
 #include "navier_stokes.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct ns_t {
     // World
@@ -123,15 +124,26 @@ void ns_tick(ns_t *ns) {
 }
 
 bool ns_increase_density(ns_t *ns, size_t x, size_t y) {
-    bool status = is_valid_coordinate(ns, x, y);
+    bool status = false;
+
+    if (!is_valid_coordinate(ns, x, y))fprintf(stdout, "Invalid increase_density coordinates {x: %ld, y: %ld}\n", x, y);
+    else status = true;
+
     if (status)
         ns->dense[y][x] += ns->density;
+
 
     return status;
 }
 
 bool ns_apply_force(ns_t *ns, size_t x, size_t y, double v_x, double v_y) {
-    bool status = is_valid_coordinate(ns, x, y);
+    bool status = false;
+
+    if (!is_valid_coordinate(ns, x, y)) fprintf(stdout, "Invalid apply_force coordinates {x: %ld, y: %ld}\n", x, y);
+    else if (v_x > NS_MAX_FORCE_VELOCITY || v_y > NS_MAX_FORCE_VELOCITY)
+        fprintf(stdout, "Invalid apply_force velocity {v_x: %lf, v_y: %lf}\n", v_x, v_y);
+    else status = true;
+
     if (status) {
         ns->u[y][x] = v_x != 0 ? v_x : ns->u[y][x];
         ns->v[y][x] = v_y != 0 ? v_y : ns->v[y][x];

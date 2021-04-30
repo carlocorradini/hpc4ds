@@ -28,6 +28,8 @@ public class NavierStokesSolver {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        printFile();
     }
 
     void clear() {
@@ -61,8 +63,9 @@ public class NavierStokesSolver {
     void tick(double dt, double visc, double diff) {
         vel_step(u, v, u_prev, v_prev, visc, dt);
         dens_step(dense, dense_prev, u, v, diff, dt);
+    }
 
-        // Print file
+    void printFile() {
         StringBuffer buffer = new StringBuffer();
         for (int i = 0; i < N + 2; i++) {
             for (int j = 0; j < N + 2; j++) {

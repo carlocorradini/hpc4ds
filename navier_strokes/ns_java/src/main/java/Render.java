@@ -149,7 +149,8 @@ public class Render extends JPanel implements ActionListener, MouseMotionListene
                     : mouseDy;
 
             if (rightMouseDown || !rightEnabled) {
-                System.out.printf("[%d, %d]: X: %f Y: %f%n%n", cellX, cellY, mouseDx, mouseDy);
+                if (mouseDx != 0 && mouseDy != 0)
+                    System.out.printf("[%d, %d]: X: %f Y: %f%n%n", cellX, cellY, mouseDx, mouseDy);
                 solver.applyForce(cellX, cellY, mouseDx, mouseDy);
             }
 
