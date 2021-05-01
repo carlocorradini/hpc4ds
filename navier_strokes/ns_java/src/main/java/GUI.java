@@ -226,7 +226,7 @@ public class GUI extends JPanel implements ActionListener, ItemListener {
 		this.ns_increase_density(15, 20);
 		this.ns_apply_force(41, 41, 0, 80);
 		
-		for (int i=0; i<N_TICKS +1; i++) {
+		for (int i=0; i<N_TICKS; i++) {
 			Render.solver.tick(0.01, 0.0001, 0.0001);
 		}
 	}
