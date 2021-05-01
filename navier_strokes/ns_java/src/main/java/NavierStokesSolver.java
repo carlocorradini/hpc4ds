@@ -67,12 +67,12 @@ public class NavierStokesSolver {
 
     void printFile() {
         StringBuffer buffer = new StringBuffer();
-        for (int i = 0; i < N + 2; i++) {
-            for (int j = 0; j < N + 2; j++) {
+        for (int i = 0; i < N + 2; i++) {			// Rows, y
+            for (int j = 0; j < N + 2; j++) {		// Columns, x
                 int density = (int) (255 * dense[i + N * j]);
                 if (density >= 255) density = 255;
 
-                buffer.append(String.format("%d, %d, %d", i, j, density));
+                buffer.append(String.format("%d, %d, %d", j, i, density));
 
                 if (i != N + 1 || j != N + 1) {
                     buffer.append("\n");
