@@ -23,7 +23,7 @@ public class Render extends JPanel implements ActionListener, MouseMotionListene
     static Color col = new Color(255, 255, 255), bgCol = new Color(0, 0, 0);
     boolean leftMouseDown = false, rightMouseDown = false;
     static boolean normalMode = true, fireMode = false, rainbowMode = false;
-    static boolean drawVectorField = false, drawFluid = true, rightEnabled = false;
+    static boolean drawVectorField = false, drawFluid = true, rightEnabled = true;
 
     public Render() {
         time.start();

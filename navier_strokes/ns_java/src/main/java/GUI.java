@@ -53,7 +53,7 @@ public class GUI extends JPanel implements ActionListener, ItemListener {
 
         fluid.setSelected(true);
         vector.setSelected(false);
-        right.setSelected(false);
+        right.setSelected(true);
         this.add(fluid);
         this.add(vector);
         this.add(right);
@@ -77,6 +77,7 @@ public class GUI extends JPanel implements ActionListener, ItemListener {
         this.add(rainbow);
         this.add(fire);
 
+
         fluid.addItemListener(this);
         vector.addItemListener(this);
         right.addItemListener(this);
@@ -91,6 +92,8 @@ public class GUI extends JPanel implements ActionListener, ItemListener {
         changeColor.addActionListener(this);
         backgroundColor.addActionListener(this);
         tick.addActionListener(this);
+		
+		this.C_testing();
     }
 
     public void itemStateChanged(ItemEvent e) {
@@ -130,9 +133,11 @@ public class GUI extends JPanel implements ActionListener, ItemListener {
         }
         if (e.getItemSelectable() == right) {
             if (right.isSelected()) {
+				System.out.println("I'M ON TRUE");
                 right.setSelected(true);
                 Render.rightEnabled = true;
             } else {
+				System.out.println("I'M ON FALSE");
                 right.setSelected(false);
                 Render.rightEnabled = false;
             }
@@ -204,4 +209,46 @@ public class GUI extends JPanel implements ActionListener, ItemListener {
             Render.solver.tick(Render.dt, Render.visc, Render.diff);
         }
     }
+	
+	/**
+	 * THIS IS A SEQUENTIAL IMPLEMENTATION OF THE SOLVER
+	 * We'll use this function to reproduce the same steps of the C 
+	 * counterpart, that will be sequential/parallel w.r.t. this one.
+	 */
+	public void C_testing() {
+		double FLUID_VISCOSITY = 0.0001;
+		double FLUID_DIFFUSION = 0.0001;
+		double NS_TIME_STEP = 0.01;
+		int N_TICKS = 50;
+		
+		this.ns_increase_density(41, 41);
+		this.ns_increase_density(65, 20);
+		this.ns_increase_density(15, 20);
+		this.ns_apply_force(41, 41, 0, 80);
+		
+		for (int i=0; i<N_TICKS +1; i++) {
+			Render.solver.tick(0.01, 0.0001, 0.0001);
+		}
+	}
+	
+	/**
+	 * Wrapper useful to us
+	 * @param x
+	 * @param y 
+	 */
+	static void ns_increase_density(int x, int y) {
+		int INCREASE = 10;
+		Render.solver.dense[Render.solver.INDEX(x, y)] += INCREASE;
+	}
+	
+	/**
+	 * Other useful wrapper
+	 * @param x
+	 * @param y
+	 * @param v_x
+	 * @param v_y 
+	 */
+	static void ns_apply_force(int x, int y, int v_x, int v_y) {
+		Render.solver.applyForce(41, 41, v_x, v_y);
+	}
 }
