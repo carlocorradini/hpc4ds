@@ -126,7 +126,7 @@ void ns_tick(ns_t *ns) {
 bool ns_increase_density(ns_t *ns, size_t x, size_t y) {
     bool status = false;
 
-    if (!is_valid_coordinate(ns, x, y))fprintf(stdout, "Invalid increase_density coordinates {x: %ld, y: %ld}\n", x, y);
+    if (!is_valid_coordinate(ns, x, y))fprintf(stderr, "Invalid increase_density coordinates {x: %ld, y: %ld}\n", x, y);
     else status = true;
 
     if (status)
@@ -139,7 +139,7 @@ bool ns_increase_density(ns_t *ns, size_t x, size_t y) {
 bool ns_apply_force(ns_t *ns, size_t x, size_t y, double v_x, double v_y) {
     bool status = false;
 
-    if (!is_valid_coordinate(ns, x, y)) fprintf(stdout, "Invalid apply_force coordinates {x: %ld, y: %ld}\n", x, y);
+    if (!is_valid_coordinate(ns, x, y)) fprintf(stderr, "Invalid apply_force coordinates {x: %ld, y: %ld}\n", x, y);
     else if (v_x > NS_MAX_FORCE_VELOCITY || v_y > NS_MAX_FORCE_VELOCITY)
         fprintf(stdout, "Invalid apply_force velocity {v_x: %lf, v_y: %lf}\n", v_x, v_y);
     else status = true;
@@ -203,8 +203,8 @@ static void ns_velocity_step(ns_t *ns) {
     ns_add_source_to_target(ns, ns->v, (const double **) ns->v_prev);
 
     ns_swap_matrix(&ns->u_prev, &ns->u);
-
     ns_diffuse(ns, 1, ns->viscosity, ns->u, (const double **) ns->u_prev);
+
     ns_swap_matrix(&ns->v_prev, &ns->v);
     ns_diffuse(ns, 2, ns->viscosity, ns->v, (const double **) ns->v_prev);
     ns_project(ns);
