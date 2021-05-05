@@ -83,3 +83,4 @@ crashlytics-build.properties
 fabric.properties
 
 /navier_strokes/ns_java/output.txt
+/navier_strokes/src/output.txt
