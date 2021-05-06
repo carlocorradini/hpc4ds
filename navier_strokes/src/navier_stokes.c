@@ -171,7 +171,7 @@ ns_world_t *ns_get_world(const ns_t *ns) {
     for (i = 0; i < ns->world_height_bounds; ++i)
         world->world[i] = (ns_cell_t *) calloc(ns->world_width_bounds, sizeof(ns_cell_t));
 
-#pragma omp parallel for \
+#pragma omp parallel for collapse(2) \
     default(none) private(y, x, cell) shared(ns, world)
     for (y = 0; y < ns->world_height_bounds; ++y) {
         for (x = 0; x < ns->world_width_bounds; ++x) {
