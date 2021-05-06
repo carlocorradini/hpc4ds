@@ -133,7 +133,6 @@ bool ns_increase_density(ns_t *ns, size_t x, size_t y) {
     if (status)
         ns->dense[y][x] += ns->density;
 
-
     return status;
 }
 
