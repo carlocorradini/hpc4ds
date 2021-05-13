@@ -155,7 +155,6 @@ bool ns_apply_force(ns_t *ns, size_t x, size_t y, double v_x, double v_y) {
 
 ns_world_t *ns_get_world(const ns_t *ns) {
     size_t i, x, y;
-    ns_cell_t cell;
     ns_world_t *world = (ns_world_t *) malloc(sizeof(ns_world_t));
 
     world->world_width = ns->world_width;
@@ -165,20 +164,25 @@ ns_world_t *ns_get_world(const ns_t *ns) {
 
     world->world = (ns_cell_t **) calloc(ns->world_height_bounds, sizeof(ns_cell_t *));
 
-#pragma omp parallel for \
-    default(none) private(i) shared(ns, world)
-    for (i = 0; i < ns->world_height_bounds; ++i)
-        world->world[i] = (ns_cell_t *) calloc(ns->world_width_bounds, sizeof(ns_cell_t));
+#pragma omp parallel \
+default(none) private(i) shared(ns, world)
+    {
+#pragma omp for
+        for (i = 0; i < ns->world_height_bounds; ++i)
+            world->world[i] = (ns_cell_t *) calloc(ns->world_width_bounds, sizeof(ns_cell_t));
 
-#pragma omp parallel for collapse(2) \
-    default(none) private(y, x, cell) shared(ns, world)
-    for (y = 0; y < ns->world_height_bounds; ++y) {
-        for (x = 0; x < ns->world_width_bounds; ++x) {
-            cell.u = &ns->u[y][x];
-            cell.v = &ns->v[y][x];
-            cell.density = &ns->dense[y][x];
+#pragma omp barrier
 
-            world->world[y][x] = cell;
+#pragma omp for collapse(2)
+        for (y = 0; y < ns->world_height_bounds; ++y) {
+            for (x = 0; x < ns->world_width_bounds; ++x) {
+                ns_cell_t cell;
+                cell.u = &ns->u[y][x];
+                cell.v = &ns->v[y][x];
+                cell.density = &ns->dense[y][x];
+
+                world->world[y][x] = cell;
+            }
         }
     }
 
