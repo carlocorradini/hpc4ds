@@ -31,7 +31,7 @@ static void ns_velocity_step(ns_t *ns);
 
 static void ns_density_step(ns_t *ns);
 
-static void ns_add_source_to_target(const ns_t *ns, double **target, const double **source);
+static void ns_add_sources_to_targets(const ns_t *ns);
 
 static void
 ns_diffuse(const ns_t *ns, size_t bounds, double diffusion_value, double **target, const double **source);
@@ -200,8 +200,7 @@ void ns_free_world(ns_world_t *world) {
 
 // PRIVATE
 static void ns_velocity_step(ns_t *ns) {
-    ns_add_source_to_target(ns, ns->u, (const double **) ns->u_prev);
-    ns_add_source_to_target(ns, ns->v, (const double **) ns->v_prev);
+    ns_add_sources_to_targets(ns);
 
     ns_swap_matrix(&ns->u_prev, &ns->u);
     ns_diffuse(ns, 1, ns->viscosity, ns->u, (const double **) ns->u_prev);
@@ -223,14 +222,15 @@ static void ns_density_step(ns_t *ns) {
     ns_advect(ns, 0, ns->dense, ns->dense_prev, ns->u, ns->v);
 }
 
-static void ns_add_source_to_target(const ns_t *ns, double **target, const double **source) {
+static void ns_add_sources_to_targets(const ns_t *ns) {
     size_t x, y;
 
 #pragma omp parallel for collapse(2) \
-    default(none) private(y, x) shared(ns, target, source)
+    default(none) private(y, x) shared(ns)
     for (y = 0; y < ns->world_height_bounds; ++y) {
         for (x = 0; x < ns->world_width_bounds; ++x) {
-            target[y][x] += ns->time_step * source[y][x];
+            ns->u[y][x] += ns->time_step * ns->u_prev[y][x];
+            ns->v[y][x] += ns->time_step * ns->v_prev[y][x];
         }
     }
 }
