@@ -171,8 +171,6 @@ default(none) private(i) shared(ns, world)
         for (i = 0; i < ns->world_height_bounds; ++i)
             world->world[i] = (ns_cell_t *) calloc(ns->world_width_bounds, sizeof(ns_cell_t));
 
-#pragma omp barrier
-
 #pragma omp for collapse(2)
         for (y = 0; y < ns->world_height_bounds; ++y) {
             for (x = 0; x < ns->world_width_bounds; ++x) {
