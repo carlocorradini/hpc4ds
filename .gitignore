@@ -82,5 +82,9 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+# Ignoring the outputs
 /navier_strokes/ns_java/output.txt
 /navier_strokes/src/output.txt
+
+# Jupyter checkpoints
+/navier_strokes/src/.ipynb_checkpoints
