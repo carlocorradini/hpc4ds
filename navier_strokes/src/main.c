@@ -20,6 +20,7 @@ int main(void) {
     ns_increase_density(ns, 41, 41);
     ns_increase_density(ns, 65, 20);
     ns_increase_density(ns, 15, 20);
+    ns_apply_force(ns, 41, 41, 0, 80);
     // END
 
     // PRINT
