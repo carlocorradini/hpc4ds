@@ -31,6 +31,9 @@ int main(void) {
 
         for (size_t y = 0; y < world->world_height_bounds; ++y) {
             for (size_t x = 0; x < world->world_width_bounds; ++x) {
+                // Normalized Y used to invert the origin in bottom-left and not top-right
+                size_t nY = world->world_height_bounds - 1 - y;
+
                 u_int64_t density = (u_int64_t) (255 * *world->world[y][x].density);
                 if (density >= 255) density = 255;
 
@@ -38,7 +41,7 @@ int main(void) {
                 //fprintf(fp, "%3d ", (int) density);
                 
                 // To print in output.txt correctly
-                fprintf(fp, "%ld, %ld, %d\n", x, y, (int) density);
+                fprintf(fp, "%ld, %ld, %d\n", x, nY, (int) density);
             }
         }
         // To see the ASCII grid
