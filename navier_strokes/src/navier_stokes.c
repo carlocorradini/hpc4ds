@@ -81,6 +81,7 @@ ns_t *ns_create(size_t world_width, size_t world_height,
     ns->dense_prev = (double **) calloc(ns->world_height_bounds, sizeof(double *));
 
 #pragma omp parallel for \
+    schedule(auto) \
     default(none) private(i) shared(ns)
     for (i = 0; i < ns->world_height_bounds; ++i) {
         ns->u[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
@@ -98,6 +99,7 @@ void ns_free(ns_t *ns) {
     size_t i;
 
 #pragma omp parallel for \
+    schedule(auto) \
     default(none) private(i) shared(ns)
     for (i = 0; i < ns->world_height_bounds; ++i) {
         free(ns->u[i]);
@@ -167,11 +169,13 @@ ns_world_t *ns_get_world(const ns_t *ns) {
 #pragma omp parallel \
 default(none) private(i) shared(ns, world)
     {
-#pragma omp for
+#pragma omp for \
+        schedule(auto)
         for (i = 0; i < ns->world_height_bounds; ++i)
             world->world[i] = (ns_cell_t *) calloc(ns->world_width_bounds, sizeof(ns_cell_t));
 
-#pragma omp for collapse(2)
+#pragma omp for collapse(2) \
+        schedule(auto)
         for (y = 0; y < ns->world_height_bounds; ++y) {
             for (x = 0; x < ns->world_width_bounds; ++x) {
                 ns_cell_t cell;
@@ -191,6 +195,7 @@ void ns_free_world(ns_world_t *world) {
     size_t i;
 
 #pragma omp parallel for \
+    schedule(auto) \
     default(none) private(i) shared(world)
     for (i = 0; i < world->world_height_bounds; ++i) {
         free(world->world[i]);
@@ -228,6 +233,7 @@ static void ns_add_sources_to_targets(const ns_t *ns) {
     size_t x, y;
 
 #pragma omp parallel for collapse(2) \
+    schedule(auto) \
     default(none) private(y, x) shared(ns)
     for (y = 0; y < ns->world_height_bounds; ++y) {
         for (x = 0; x < ns->world_width_bounds; ++x) {
@@ -286,6 +292,7 @@ static void ns_project(ns_t *ns) {
     }
 
 #pragma omp parallel for collapse(2) \
+    schedule(auto) \
     default(none) private(y, x) shared(ns, h)
     for (y = 1; y <= ns->world_height; ++y) {
         for (x = 1; x <= ns->world_width; ++x) {
@@ -305,6 +312,7 @@ static void ns_advect(const ns_t *ns, size_t bounds, double **d, double **d0, do
     double dt0_height = ns->time_step * (double) ns->world_height;
 
 #pragma omp parallel for collapse(2) \
+    schedule(auto) \
     default(none) private(y, x, yy, xx, x0, x1, y0, y1, s0, s1, t0, t1) shared(ns, dt0_width, dt0_height, u, v, d, d0)
     for (y = 1; y <= ns->world_height; ++y) {
         for (x = 1; x <= ns->world_width; ++x) {
