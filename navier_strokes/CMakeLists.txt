@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
-project(navierstokes C)
+project(navierstokes LANGUAGES C)
+
+# Option
+option(NO_OPEN_MP "Disable OpenMP" OFF)
 
 # Configuration
 set(CMAKE_C_STANDARD 11)
@@ -12,8 +15,9 @@ find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
 
 # Open MP
-find_package(OpenMP REQUIRED)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+if (NOT NO_OPEN_MP)
+    find_package(OpenMP REQUIRED)
+endif ()
 
 # Headers
 file(GLOB HEADER_FILES src/*.h)
@@ -22,3 +26,6 @@ file(GLOB SOURCE_FILES src/*.c)
 
 # Executable
 add_executable(navierstokes ${SOURCE_FILES} ${HEADER_FILES})
+if (NOT NO_OPEN_MP)
+    target_link_libraries(navierstokes PRIVATE OpenMP::OpenMP_C)
+endif ()
