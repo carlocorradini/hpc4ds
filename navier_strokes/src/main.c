@@ -34,7 +34,7 @@ int main(void) {
                 // Normalized Y used to invert the origin in bottom-left and not top-right
                 size_t nY = world->world_height_bounds - 1 - y;
 
-                u_int64_t density = (u_int64_t) (255 * *world->world[y][x].density);
+                int density = (int) (255 * *world->world[y][x].density);
                 if (density >= 255) density = 255;
 
                 // To see the ASCII grid
