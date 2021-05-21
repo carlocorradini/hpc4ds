@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// Data wrapper
 typedef struct ns_t {
     // World
     size_t world_width;
@@ -26,7 +27,9 @@ typedef struct ns_t {
     double **dense_prev;
 } ns_t;
 
-// PRIVATE DEFINITIONS
+/**
+ * Private definitions
+ */
 static void ns_velocity_step(ns_t *ns);
 
 static void ns_density_step(ns_t *ns);
@@ -40,20 +43,18 @@ static void ns_project(ns_t *ns);
 
 static void ns_advect(const ns_t *ns, size_t bounds, double **d, double **d0, double **u, double **v);
 
-/**
- * Check for bounces on bounds.
- *
- * @param ns Navier Stokes struct pointer
- * @param bounds Bounds value
- * @param target World data to analyze
- */
 static void ns_set_bounds(const ns_t *ns, size_t bounds, double **target);
 
 static void ns_swap_matrix(double ***x, double ***y);
 
 static bool is_valid_coordinate(const ns_t *ns, size_t x, size_t y);
+/**
+ * END Private definitions
+ */
 
-// PUBLIC
+/**
+ * Public
+ */
 ns_t *ns_create(size_t world_width, size_t world_height,
                 double viscosity, double density, double diffusion,
                 double time_step) {
@@ -204,8 +205,13 @@ void ns_free_world(ns_world_t *world) {
     free(world->world);
     free(world);
 }
+/**
+ * END Public
+ */
 
-// PRIVATE
+/**
+ * Private
+ */
 static void ns_velocity_step(ns_t *ns) {
     ns_add_sources_to_targets(ns);
 
@@ -376,3 +382,7 @@ static bool is_valid_coordinate(const ns_t *ns, size_t x, size_t y) {
     return x >= 0 && x < ns->world_width_bounds
            && y >= 0 && y < ns->world_height_bounds;
 }
+
+/**
+* END Private
+*/
