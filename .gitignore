@@ -90,10 +90,10 @@ fabric.properties
 /navier_strokes/.ipynb_checkpoints
 
 # Java classes
-/ns_java/target/classes/GUI.class
-/ns_java/target/classes/Main.class
-/ns_java/target/classes/NavierStokesSolver.class
-/ns_java/target/classes/Render.class
+/navier_strokes/ns_java/target/classes/GUI.class
+/navier_strokes/ns_java/target/classes/Main.class
+/navier_strokes/ns_java/target/classes/NavierStokesSolver.class
+/navier_strokes/ns_java/target/classes/Render.class
 
 /navier_strokes/src/.idea
 
