@@ -9,7 +9,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 
 public class NavierStokesSolver {
-    final static int N = 80;
+    final static int N = 100;
     final static double N_INVERSE = 1 / (double) N;
     final static int SIZE = (N + 2) * (N + 2);
     double[] u = new double[SIZE];
