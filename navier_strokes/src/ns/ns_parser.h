@@ -59,6 +59,15 @@ typedef struct ns_parse_simulations_t {
 } ns_parse_simulations_t;
 
 /**
+ * Parse text string into simulation struct.
+ * Remember to free with ns_parse_simulation_free.
+ *
+ * @param text Text string to parse
+ * @return Parsed JSON simulation struct, NULL otherwise
+ */
+ns_parse_simulation_t *ns_parse_simulation(const char *text);
+
+/**
  * Parse text string into simulations struct.
  * Remember to free with ns_parse_simulations_free.
  *

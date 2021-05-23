@@ -18,6 +18,8 @@ static bool ns_parse_simulation_check_and_assign_mod(const cJSON *mod_json, ns_p
 
 static bool ns_parse_simulation_check_and_assign_mods(const cJSON *mods_json, ns_parse_simulation_t *simulation);
 
+static void *ns_parse_simulation_error(cJSON *file_json, ns_parse_simulation_t *simulation);
+
 static void *ns_parse_simulations_error(cJSON *file_json, ns_parse_simulations_t *simulations);
 /**
  * END Private definitions
@@ -26,7 +28,38 @@ static void *ns_parse_simulations_error(cJSON *file_json, ns_parse_simulations_t
 /**
  * Public
  */
+ns_parse_simulation_t *ns_parse_simulation(const char *const text) {
+    if (text == NULL) return NULL;
+    ns_parse_simulation_t *simulation = NULL;
+    cJSON *simulation_json = NULL;
+
+    simulation = (ns_parse_simulation_t *) malloc(sizeof(ns_parse_simulation_t));
+    if (simulation == NULL) return ns_parse_simulation_error(simulation_json, simulation);
+
+    simulation_json = cJSON_Parse(text);
+    if (simulation_json == NULL) return ns_parse_simulation_error(simulation_json, simulation);
+
+    // Check & Assign
+    if (!(ns_parse_simulation_check_and_assign_time_step(
+            cJSON_GetObjectItemCaseSensitive(simulation_json, "time_step"), &simulation->time_step)
+          && ns_parse_simulation_check_and_assign_ticks(
+            cJSON_GetObjectItemCaseSensitive(simulation_json, "ticks"), &simulation->ticks)
+          && ns_parse_simulation_check_and_assign_world(
+            cJSON_GetObjectItemCaseSensitive(simulation_json, "world"), &simulation->world)
+          && ns_parse_simulation_check_and_assign_fluid(
+            cJSON_GetObjectItemCaseSensitive(simulation_json, "fluid"), &simulation->fluid)
+          && ns_parse_simulation_check_and_assign_mods(
+            cJSON_GetObjectItemCaseSensitive(simulation_json, "mods"), simulation)
+    ))
+        return ns_parse_simulation_error(simulation_json, simulation);
+
+    cJSON_Delete(simulation_json);
+    return simulation;
+
+}
+
 ns_parse_simulations_t *ns_parse_simulations(const char *const text) {
+    if (text == NULL) return NULL;
     ns_parse_simulations_t *simulations = NULL;
     cJSON *text_json = NULL;
     const cJSON *simulation_json = NULL;
@@ -48,23 +81,11 @@ ns_parse_simulations_t *ns_parse_simulations(const char *const text) {
 
     uint64_t index = 0;
     cJSON_ArrayForEach(simulation_json, simulations_json) {
-        ns_parse_simulation_t *simulation = NULL;
+        char *simulation_text = cJSON_Print(simulation_json);
+        ns_parse_simulation_t *simulation = ns_parse_simulation(simulation_text);
+        free(simulation_text);
 
-        simulation = (ns_parse_simulation_t *) malloc(sizeof(ns_parse_simulation_t));
-        if (simulation == NULL) return ns_parse_simulations_error(text_json, simulations);
-
-        // Check & Assign
-        if (!(ns_parse_simulation_check_and_assign_time_step(
-                cJSON_GetObjectItemCaseSensitive(simulation_json, "time_step"), &simulation->time_step)
-              && ns_parse_simulation_check_and_assign_ticks(
-                cJSON_GetObjectItemCaseSensitive(simulation_json, "ticks"), &simulation->ticks)
-              && ns_parse_simulation_check_and_assign_world(
-                cJSON_GetObjectItemCaseSensitive(simulation_json, "world"), &simulation->world)
-              && ns_parse_simulation_check_and_assign_fluid(
-                cJSON_GetObjectItemCaseSensitive(simulation_json, "fluid"), &simulation->fluid)
-              && ns_parse_simulation_check_and_assign_mods(
-                cJSON_GetObjectItemCaseSensitive(simulation_json, "mods"), simulation)
-        ))
+        if (simulation == NULL)
             return ns_parse_simulations_error(text_json, simulations);
 
         simulations->simulations[index] = simulation;
@@ -324,6 +345,12 @@ static bool ns_parse_simulation_check_and_assign_mods(const cJSON *const mods_js
     }
 
     return true;
+}
+
+static void *ns_parse_simulation_error(cJSON *file_json, ns_parse_simulation_t *simulation) {
+    cJSON_Delete(file_json);
+    ns_parse_simulation_free(simulation);
+    return NULL;
 }
 
 static void *ns_parse_simulations_error(cJSON *file_json, ns_parse_simulations_t *simulations) {
