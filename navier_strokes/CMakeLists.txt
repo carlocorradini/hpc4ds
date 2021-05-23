@@ -18,6 +18,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cJSON)
 include_directories("${cJSON_SOURCE_DIR}")
+# argparse
+FetchContent_Declare(
+        argparse
+        GIT_REPOSITORY https://github.com/cofyc/argparse.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(argparse)
+include_directories("${argparse_SOURCE_DIR}")
 # MPI
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
@@ -39,7 +47,7 @@ file(GLOB_RECURSE SOURCE_FILES src/*.c)
 
 # Executable
 add_executable(navierstokes ${SOURCE_FILES} ${HEADER_FILES})
-target_link_libraries(navierstokes PRIVATE cjson)
+target_link_libraries(navierstokes PRIVATE cjson argparse)
 if (NOT NO_OPEN_MP)
     target_link_libraries(navierstokes PRIVATE OpenMP::OpenMP_C)
 endif ()
