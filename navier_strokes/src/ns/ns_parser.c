@@ -1,64 +1,125 @@
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include <cJSON.h>
-#include "navier_stokes.h"
+#include "ns_parser.h"
 
-typedef struct ns_parse_simulation_world_t {
-    u_int64_t width;
-    u_int64_t height;
-} ns_parse_simulation_world_t;
+/**
+ * Private definitions
+ */
+static bool ns_parse_simulation_check_and_assign_time_step(const cJSON *time_step_json, double *time_step);
 
-typedef struct ns_parse_simulation_fluid_t {
-    double viscosity;
-    double density;
-    double diffusion;
-} ns_parse_simulation_fluid_t;
+static bool ns_parse_simulation_check_and_assign_ticks(const cJSON *ticks_json, u_int64_t *ticks);
 
-typedef struct ns_parse_simulation_mods_density_t {
-    u_int64_t x;
-    u_int64_t y;
-} ns_parse_simulation_mods_density_t;
+static bool ns_parse_simulation_check_and_assign_world(const cJSON *world_json, ns_parse_simulation_world_t *world);
 
-typedef struct ns_parse_simulation_mods_forces_velocity_t {
-    double x;
-    double y;
-} ns_parse_simulation_mods_forces_velocity_t;
+static bool ns_parse_simulation_check_and_assign_fluid(const cJSON *fluid_json, ns_parse_simulation_fluid_t *fluid);
 
-typedef struct ns_parse_simulation_mods_force_t {
-    u_int64_t x;
-    u_int64_t y;
-    ns_parse_simulation_mods_forces_velocity_t velocity;
-} ns_parse_simulation_mods_force_t;
+static bool ns_parse_simulation_check_and_assign_mod(const cJSON *mod_json, ns_parse_simulation_mod_t *mod);
 
-typedef struct ns_parse_simulation_mod_t {
-    u_int64_t tick;
-    ns_parse_simulation_mods_density_t **densities;
-    u_int64_t densities_length;
-    ns_parse_simulation_mods_force_t **forces;
-    u_int64_t forces_length;
-} ns_parse_simulation_mod_t;
+static bool ns_parse_simulation_check_and_assign_mods(const cJSON *mods_json, ns_parse_simulation_t *simulation);
 
-typedef struct ns_parse_simulation_t {
-    double time_step;
-    u_int64_t ticks;
+static void *ns_parse_simulations_error(cJSON *file_json, ns_parse_simulations_t *simulations);
+/**
+ * END Private definitions
+ */
 
-    // World
-    ns_parse_simulation_world_t world;
+/**
+ * Public
+ */
+ns_parse_simulations_t *ns_parse_simulations(const char *const text) {
+    ns_parse_simulations_t *simulations = NULL;
+    cJSON *text_json = NULL;
+    const cJSON *simulation_json = NULL;
+    const cJSON *simulations_json = NULL;
 
-    // Fluid
-    ns_parse_simulation_fluid_t fluid;
+    simulations = (ns_parse_simulations_t *) malloc(sizeof(ns_parse_simulations_t));
+    if (simulations == NULL) return ns_parse_simulations_error(text_json, simulations);
 
-    // Mods
-    ns_parse_simulation_mod_t **mods;
-    u_int64_t mods_length;
-} ns_parse_simulation_t;
+    text_json = cJSON_Parse(text);
+    if (text_json == NULL) return ns_parse_simulations_error(text_json, simulations);
 
-typedef struct ns_parse_simulations_t {
-    ns_parse_simulation_t **simulations;
-    u_int64_t simulations_length;
-} ns_parse_simulations_t;
+    simulations_json = cJSON_GetObjectItemCaseSensitive(text_json, "simulations");
+    if (!cJSON_IsArray(simulations_json)) return ns_parse_simulations_error(text_json, simulations);
 
+    simulations->simulations_length = (u_int64_t) cJSON_GetArraySize(simulations_json);
+    simulations->simulations = (ns_parse_simulation_t **) calloc(simulations->simulations_length,
+                                                                 sizeof(ns_parse_simulation_t *));
+    if (simulations->simulations == NULL) return ns_parse_simulations_error(text_json, simulations);
+
+    u_int64_t index = 0;
+    cJSON_ArrayForEach(simulation_json, simulations_json) {
+        ns_parse_simulation_t *simulation = NULL;
+
+        simulation = (ns_parse_simulation_t *) malloc(sizeof(ns_parse_simulation_t));
+        if (simulation == NULL) return ns_parse_simulations_error(text_json, simulations);
+
+        // Check & Assign
+        if (!(ns_parse_simulation_check_and_assign_time_step(
+                cJSON_GetObjectItemCaseSensitive(simulation_json, "time_step"), &simulation->time_step)
+              && ns_parse_simulation_check_and_assign_ticks(
+                cJSON_GetObjectItemCaseSensitive(simulation_json, "ticks"), &simulation->ticks)
+              && ns_parse_simulation_check_and_assign_world(
+                cJSON_GetObjectItemCaseSensitive(simulation_json, "world"), &simulation->world)
+              && ns_parse_simulation_check_and_assign_fluid(
+                cJSON_GetObjectItemCaseSensitive(simulation_json, "fluid"), &simulation->fluid)
+              && ns_parse_simulation_check_and_assign_mods(
+                cJSON_GetObjectItemCaseSensitive(simulation_json, "mods"), simulation)
+        ))
+            return ns_parse_simulations_error(text_json, simulations);
+
+        simulations->simulations[index] = simulation;
+        index += 1;
+    }
+
+    cJSON_Delete(text_json);
+    return simulations;
+}
+
+void ns_parse_simulation_free(ns_parse_simulation_t *simulation) {
+    if (simulation != NULL && simulation->mods != NULL) {
+        for (u_int64_t i_m = 0; i_m < simulation->mods_length; ++i_m) {
+            ns_parse_simulation_mod_t *mod = simulation->mods[i_m];
+
+            if (mod != NULL && mod->densities != NULL) {
+                for (u_int64_t i_d = 0; i_d < mod->densities_length; ++i_d) {
+                    ns_parse_simulation_mods_density_t *density = mod->densities[i_d];
+                    free(density);
+                }
+                free(mod->densities);
+            }
+
+            if (mod != NULL && mod->forces != NULL) {
+                for (u_int64_t i_f = 0; i_f < mod->densities_length; ++i_f) {
+                    ns_parse_simulation_mods_force_t *force = mod->forces[i_f];
+                    free(force);
+                }
+                free(mod->forces);
+            }
+
+            free(mod);
+        }
+
+        free(simulation->mods);
+    }
+
+    free(simulation);
+}
+
+void ns_parse_simulations_free(ns_parse_simulations_t *simulations) {
+    if (simulations != NULL && simulations->simulations != NULL) {
+        for (u_int64_t i_s = 0; i_s < simulations->simulations_length; ++i_s) {
+            ns_parse_simulation_free(simulations->simulations[i_s]);
+        }
+
+        free(simulations->simulations);
+    }
+
+    free(simulations);
+}
+/**
+ * END Public
+ */
+
+/**
+ * Private
+ */
 static bool ns_parse_simulation_check_and_assign_time_step(const cJSON *const time_step_json, double *time_step) {
     if (time_step_json == NULL || time_step == NULL) return false;
 
@@ -262,100 +323,12 @@ static bool ns_parse_simulation_check_and_assign_mods(const cJSON *const mods_js
     return true;
 }
 
-void ns_parse_simulation_free(ns_parse_simulation_t *simulation) {
-    if (simulation != NULL && simulation->mods != NULL) {
-        for (u_int64_t i_m = 0; i_m < simulation->mods_length; ++i_m) {
-            ns_parse_simulation_mod_t *mod = simulation->mods[i_m];
-
-            if (mod != NULL && mod->densities != NULL) {
-                for (u_int64_t i_d = 0; i_d < mod->densities_length; ++i_d) {
-                    ns_parse_simulation_mods_density_t *density = mod->densities[i_d];
-                    free(density);
-                }
-                free(mod->densities);
-            }
-
-            if (mod != NULL && mod->forces != NULL) {
-                for (u_int64_t i_f = 0; i_f < mod->densities_length; ++i_f) {
-                    ns_parse_simulation_mods_force_t *force = mod->forces[i_f];
-                    free(force);
-                }
-                free(mod->forces);
-            }
-
-            free(mod);
-        }
-
-        free(simulation->mods);
-    }
-
-    free(simulation);
-}
-
-void ns_parse_simulations_free(ns_parse_simulations_t *simulations) {
-    if (simulations != NULL && simulations->simulations != NULL) {
-        for (u_int64_t i_s = 0; i_s < simulations->simulations_length; ++i_s) {
-            ns_parse_simulation_free(simulations->simulations[i_s]);
-        }
-
-        free(simulations->simulations);
-    }
-
-    free(simulations);
-}
-
 static void *ns_parse_simulations_error(cJSON *file_json, ns_parse_simulations_t *simulations) {
     cJSON_Delete(file_json);
     ns_parse_simulations_free(simulations);
-
     return NULL;
 }
 
-ns_parse_simulations_t *ns_parse_simulations(const char *const file) {
-    ns_parse_simulations_t *simulations = NULL;
-    cJSON *file_json = NULL;
-    const cJSON *simulation_json = NULL;
-    const cJSON *simulations_json = NULL;
-
-    simulations = (ns_parse_simulations_t *) malloc(sizeof(ns_parse_simulations_t));
-    if (simulations == NULL) return ns_parse_simulations_error(file_json, simulations);
-
-    file_json = cJSON_Parse(file);
-    if (file_json == NULL) return ns_parse_simulations_error(file_json, simulations);
-
-    simulations_json = cJSON_GetObjectItemCaseSensitive(file_json, "simulations");
-    if (!cJSON_IsArray(simulations_json)) return ns_parse_simulations_error(file_json, simulations);
-
-    simulations->simulations_length = (u_int64_t) cJSON_GetArraySize(simulations_json);
-    simulations->simulations = (ns_parse_simulation_t **) calloc(simulations->simulations_length,
-                                                                 sizeof(ns_parse_simulation_t *));
-    if (simulations->simulations == NULL) return ns_parse_simulations_error(file_json, simulations);
-
-    u_int64_t index = 0;
-    cJSON_ArrayForEach(simulation_json, simulations_json) {
-        ns_parse_simulation_t *simulation = NULL;
-
-        simulation = (ns_parse_simulation_t *) malloc(sizeof(ns_parse_simulation_t));
-        if (simulation == NULL) return ns_parse_simulations_error(file_json, simulations);
-
-        // Check & Assign
-        if (!(ns_parse_simulation_check_and_assign_time_step(
-                cJSON_GetObjectItemCaseSensitive(simulation_json, "time_step"), &simulation->time_step)
-              && ns_parse_simulation_check_and_assign_ticks(
-                cJSON_GetObjectItemCaseSensitive(simulation_json, "ticks"), &simulation->ticks)
-              && ns_parse_simulation_check_and_assign_world(
-                cJSON_GetObjectItemCaseSensitive(simulation_json, "world"), &simulation->world)
-              && ns_parse_simulation_check_and_assign_fluid(
-                cJSON_GetObjectItemCaseSensitive(simulation_json, "fluid"), &simulation->fluid)
-              && ns_parse_simulation_check_and_assign_mods(
-                cJSON_GetObjectItemCaseSensitive(simulation_json, "mods"), simulation)
-        ))
-            return ns_parse_simulations_error(file_json, simulations);
-
-        simulations->simulations[index] = simulation;
-        index += 1;
-    }
-
-    cJSON_Delete(file_json);
-    return simulations;
-}
+/**
+* END Private
+*/

@@ -1,4 +1,4 @@
-#include "navier_stokes.h"
+#include "ns_solver.h"
 #include <stdlib.h>
 #include <stdio.h>
 

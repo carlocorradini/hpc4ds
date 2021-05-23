@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "navier_stokes.h"
-#include "test.h"
+#include "ns/ns_solver.h"
+#include "ns/ns_parser.h"
 
 static ns_parse_simulation_mod_t *
 find_mod_by_tick(const ns_parse_simulation_t *const simulation, u_int64_t tick) {

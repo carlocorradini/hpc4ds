@@ -1,5 +1,5 @@
-#ifndef _NAVIER_STOKES_H
-#define _NAVIER_STOKES_H
+#ifndef _NS_SOLVER_H
+#define _NS_SOLVER_H
 
 #include <stddef.h>
 #include <stdbool.h>
