@@ -1,9 +1,11 @@
 #include "comms_master.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <mpi.h>
 #include "../ns/ns_parser.h"
+#include "../ns/ns_stringify.h"
 #include "../ns/ns_solver.h"
 
 static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_parse_simulation_t *simulation, uint64_t tick);
@@ -20,42 +22,19 @@ void do_master(const comms_master_args_t *const args) {
     ns_parse_simulations_t *simulations = ns_parse_simulations(string);
 
     for (uint64_t i_s = 0; i_s < simulations->simulations_length; ++i_s) {
-        ns_parse_simulation_t *simulation = NULL;
-        ns_t *ns = NULL;
-        ns_world_t *world = NULL;
+        const ns_parse_simulation_t *simulation = NULL;
+        char *simulation_string = NULL;
+        int worker;
 
         simulation = simulations->simulations[i_s];
-        ns = ns_create(simulation->world.width, simulation->world.height,
-                       simulation->fluid.viscosity, simulation->fluid.density, simulation->fluid.diffusion,
-                       simulation->time_step);
-        world = ns_get_world(ns);
+        simulation_string = ns_stringify_simulation(simulation);
+        // FIXME
+        worker = size - 1;
 
-        for (uint64_t tick = 0; tick < simulation->ticks; ++tick) {
-            const ns_parse_simulation_mod_t *const mod = find_mod_by_tick(simulation, tick);
+        fprintf(stdout, "Sending simulation %ld to worker node %d\n", i_s, worker);
+        MPI_Send(simulation_string, (int) strlen(simulation_string), MPI_CHAR, worker, 0, MPI_COMM_WORLD);
 
-            if (mod != NULL) {
-                for (uint64_t i_d = 0; i_d < mod->densities_length; ++i_d) {
-                    const ns_parse_simulation_mods_density_t *const density = mod->densities[i_d];
-                    ns_increase_density(ns, density->x, density->y);
-                }
-
-                for (uint64_t i_f = 0; i_f < mod->forces_length; ++i_f) {
-                    const ns_parse_simulation_mods_force_t *const force = mod->forces[i_f];
-                    ns_apply_force(ns, force->x, force->y, force->velocity.x, force->velocity.y);
-                }
-            }
-
-            if (tick != 0) ns_tick(ns);
-
-            for (size_t y = 0; y < world->world_height_bounds; ++y) {
-                for (size_t x = 0; x < world->world_width_bounds; ++x) {
-                    const double density = *world->world[y][x].density;
-                }
-            }
-        }
-
-        ns_free_world(world);
-        ns_free(ns);
+        free(simulation_string);
     }
 
     ns_parse_simulations_free(simulations);

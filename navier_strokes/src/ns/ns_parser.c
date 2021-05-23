@@ -358,7 +358,6 @@ static void *ns_parse_simulations_error(cJSON *file_json, ns_parse_simulations_t
     ns_parse_simulations_free(simulations);
     return NULL;
 }
-
 /**
 * END Private
 */

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <mpi.h>
 #include <argparse.h>
 #include "comms/comms_master.h"
@@ -16,11 +17,11 @@ int main(int argc, const char **argv) {
     // Arguments
     struct argparse argparse;
     const char *arg_simulations = NULL;
+    bool arg_m_worker = false;
     struct argparse_option options[] = {
             OPT_GROUP("Options:"),
             OPT_HELP(),
-            OPT_STRING(0, "simulations", &arg_simulations, "Path to JSON simulations file", NULL, 0,
-                       OPT_NONEG),
+            OPT_STRING(0, "simulations", &arg_simulations, "Path to JSON simulations file", NULL, 0, OPT_NONEG),
             OPT_END(),
     };
 
