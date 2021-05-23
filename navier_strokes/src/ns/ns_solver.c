@@ -5,10 +5,10 @@
 // Data wrapper
 typedef struct ns_t {
     // World
-    u_int64_t world_width;
-    u_int64_t world_width_bounds;
-    u_int64_t world_height;
-    u_int64_t world_height_bounds;
+    uint64_t world_width;
+    uint64_t world_width_bounds;
+    uint64_t world_height;
+    uint64_t world_height_bounds;
 
     // Fluid
     double viscosity;
@@ -37,17 +37,17 @@ static void ns_density_step(ns_t *ns);
 static void ns_add_sources_to_targets(const ns_t *ns);
 
 static void
-ns_diffuse(const ns_t *ns, u_int64_t bounds, double diffusion_value, double **target, const double **source);
+ns_diffuse(const ns_t *ns, uint64_t bounds, double diffusion_value, double **target, const double **source);
 
 static void ns_project(ns_t *ns);
 
-static void ns_advect(const ns_t *ns, u_int64_t bounds, double **d, double **d0, double **u, double **v);
+static void ns_advect(const ns_t *ns, uint64_t bounds, double **d, double **d0, double **u, double **v);
 
-static void ns_set_bounds(const ns_t *ns, u_int64_t bounds, double **target);
+static void ns_set_bounds(const ns_t *ns, uint64_t bounds, double **target);
 
 static void ns_swap_matrix(double ***x, double ***y);
 
-static bool is_valid_coordinate(const ns_t *ns, u_int64_t x, u_int64_t y);
+static bool is_valid_coordinate(const ns_t *ns, uint64_t x, uint64_t y);
 /**
  * END Private definitions
  */
@@ -55,10 +55,10 @@ static bool is_valid_coordinate(const ns_t *ns, u_int64_t x, u_int64_t y);
 /**
  * Public
  */
-ns_t *ns_create(u_int64_t world_width, u_int64_t world_height,
+ns_t *ns_create(uint64_t world_width, uint64_t world_height,
                 double viscosity, double density, double diffusion,
                 double time_step) {
-    u_int64_t i;
+    uint64_t i;
     ns_t *ns = (ns_t *) malloc(sizeof(ns_t));
 
     // World
@@ -97,7 +97,7 @@ ns_t *ns_create(u_int64_t world_width, u_int64_t world_height,
 }
 
 void ns_free(ns_t *ns) {
-    u_int64_t i;
+    uint64_t i;
 
 #pragma omp parallel for \
     schedule(auto) \
@@ -126,7 +126,7 @@ void ns_tick(ns_t *ns) {
     ns_density_step(ns);
 }
 
-bool ns_increase_density(ns_t *ns, u_int64_t x, u_int64_t y) {
+bool ns_increase_density(ns_t *ns, uint64_t x, uint64_t y) {
     bool status = false;
 
     if (!is_valid_coordinate(ns, x, y))
@@ -139,7 +139,7 @@ bool ns_increase_density(ns_t *ns, u_int64_t x, u_int64_t y) {
     return status;
 }
 
-bool ns_apply_force(ns_t *ns, u_int64_t x, u_int64_t y, double v_x, double v_y) {
+bool ns_apply_force(ns_t *ns, uint64_t x, uint64_t y, double v_x, double v_y) {
     bool status = false;
 
     if (!is_valid_coordinate(ns, x, y))
@@ -157,7 +157,7 @@ bool ns_apply_force(ns_t *ns, u_int64_t x, u_int64_t y, double v_x, double v_y) 
 }
 
 ns_world_t *ns_get_world(const ns_t *ns) {
-    u_int64_t i, x, y;
+    uint64_t i, x, y;
     ns_world_t *world = (ns_world_t *) malloc(sizeof(ns_world_t));
 
     world->world_width = ns->world_width;
@@ -193,7 +193,7 @@ default(none) private(i) shared(ns, world)
 }
 
 void ns_free_world(ns_world_t *world) {
-    u_int64_t i;
+    uint64_t i;
 
 #pragma omp parallel for \
     schedule(auto) \
@@ -236,7 +236,7 @@ static void ns_density_step(ns_t *ns) {
 }
 
 static void ns_add_sources_to_targets(const ns_t *ns) {
-    u_int64_t x, y;
+    uint64_t x, y;
 
 #pragma omp parallel for collapse(2) \
     schedule(auto) \
@@ -250,13 +250,13 @@ static void ns_add_sources_to_targets(const ns_t *ns) {
 }
 
 static void
-ns_diffuse(const ns_t *ns, u_int64_t bounds, double diffusion_value, double **target, const double **source) {
+ns_diffuse(const ns_t *ns, uint64_t bounds, double diffusion_value, double **target, const double **source) {
     const double a = ns->time_step * diffusion_value * (double) ns->world_width * (double) ns->world_height;
 
     //TODO 20? MAYBE ITERATIONS? thread???
-    for (u_int64_t k = 0; k < 20; k++) {
-        for (u_int64_t y = 1; y <= ns->world_height; ++y) {
-            for (u_int64_t x = 1; x <= ns->world_width; ++x) {
+    for (uint64_t k = 0; k < 20; k++) {
+        for (uint64_t y = 1; y <= ns->world_height; ++y) {
+            for (uint64_t x = 1; x <= ns->world_width; ++x) {
                 target[y][x] =
                         (source[y][x] + a * (target[y][x - 1] + target[y][x + 1] + target[y - 1][x] + target[y + 1][x]))
                         / (1 + 4 * a);
@@ -268,7 +268,7 @@ ns_diffuse(const ns_t *ns, u_int64_t bounds, double diffusion_value, double **ta
 }
 
 static void ns_project(ns_t *ns) {
-    u_int64_t x, y;
+    uint64_t x, y;
     // TODO ??? N CONTROLLA SOURCE
     double h = 1.0 / (double) ns->world_width;
 
@@ -284,7 +284,7 @@ static void ns_project(ns_t *ns) {
     ns_set_bounds(ns, 0, ns->u_prev);
 
     // TODO k = 20 wtf iterations?
-    for (u_int64_t k = 0; k < 20; k++) {
+    for (uint64_t k = 0; k < 20; k++) {
         for (y = 1; y <= ns->world_height; ++y) {
             for (x = 1; x <= ns->world_width; ++x) {
                 ns->u_prev[y][x] =
@@ -311,8 +311,8 @@ static void ns_project(ns_t *ns) {
     ns_set_bounds(ns, 2, ns->v);
 }
 
-static void ns_advect(const ns_t *ns, u_int64_t bounds, double **d, double **d0, double **u, double **v) {
-    u_int64_t x, y, x0, x1, y0, y1;
+static void ns_advect(const ns_t *ns, uint64_t bounds, double **d, double **d0, double **u, double **v) {
+    uint64_t x, y, x0, x1, y0, y1;
     double xx, yy, s0, s1, t0, t1;
     double dt0_width = ns->time_step * (double) ns->world_width;
     double dt0_height = ns->time_step * (double) ns->world_height;
@@ -330,7 +330,7 @@ static void ns_advect(const ns_t *ns, u_int64_t bounds, double **d, double **d0,
                 xx = 0.5;
             if (xx > (double) ns->world_width + 0.5)
                 xx = (double) ns->world_width + 0.5;
-            x0 = (u_int64_t) xx;
+            x0 = (uint64_t) xx;
             x1 = x0 + 1;
 
             // Check yy
@@ -338,7 +338,7 @@ static void ns_advect(const ns_t *ns, u_int64_t bounds, double **d, double **d0,
                 yy = 0.5;
             if (yy > (double) ns->world_height + 0.5)
                 yy = (double) ns->world_height + 0.5;
-            y0 = (u_int64_t) yy;
+            y0 = (uint64_t) yy;
             y1 = y0 + 1;
 
 
@@ -355,9 +355,9 @@ static void ns_advect(const ns_t *ns, u_int64_t bounds, double **d, double **d0,
     ns_set_bounds(ns, bounds, d);
 }
 
-static void ns_set_bounds(const ns_t *ns, u_int64_t bounds, double **target) {
-    for (u_int64_t y = 1; y <= ns->world_height; ++y) {
-        for (u_int64_t x = 1; x <= ns->world_width; ++x) {
+static void ns_set_bounds(const ns_t *ns, uint64_t bounds, double **target) {
+    for (uint64_t y = 1; y <= ns->world_height; ++y) {
+        for (uint64_t x = 1; x <= ns->world_width; ++x) {
             target[y][0] = (bounds == 1) ? -target[y][1] : target[y][1];
             target[y][ns->world_width + 1] = bounds == 1 ? -target[y][ns->world_width] : target[y][ns->world_width];
             target[0][x] = bounds == 2 ? -target[1][x] : target[1][x];
@@ -378,7 +378,7 @@ static void ns_swap_matrix(double ***x, double ***y) {
     *y = tmp;
 }
 
-static bool is_valid_coordinate(const ns_t *ns, u_int64_t x, u_int64_t y) {
+static bool is_valid_coordinate(const ns_t *ns, uint64_t x, uint64_t y) {
     return x >= 0 && x < ns->world_width_bounds
            && y >= 0 && y < ns->world_height_bounds;
 }

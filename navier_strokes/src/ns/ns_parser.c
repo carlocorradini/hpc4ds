@@ -1,11 +1,14 @@
 #include "ns_parser.h"
+#include <stdlib.h>
+#include <stdbool.h>
+#include <cJSON.h>
 
 /**
  * Private definitions
  */
 static bool ns_parse_simulation_check_and_assign_time_step(const cJSON *time_step_json, double *time_step);
 
-static bool ns_parse_simulation_check_and_assign_ticks(const cJSON *ticks_json, u_int64_t *ticks);
+static bool ns_parse_simulation_check_and_assign_ticks(const cJSON *ticks_json, uint64_t *ticks);
 
 static bool ns_parse_simulation_check_and_assign_world(const cJSON *world_json, ns_parse_simulation_world_t *world);
 
@@ -38,12 +41,12 @@ ns_parse_simulations_t *ns_parse_simulations(const char *const text) {
     simulations_json = cJSON_GetObjectItemCaseSensitive(text_json, "simulations");
     if (!cJSON_IsArray(simulations_json)) return ns_parse_simulations_error(text_json, simulations);
 
-    simulations->simulations_length = (u_int64_t) cJSON_GetArraySize(simulations_json);
+    simulations->simulations_length = (uint64_t) cJSON_GetArraySize(simulations_json);
     simulations->simulations = (ns_parse_simulation_t **) calloc(simulations->simulations_length,
                                                                  sizeof(ns_parse_simulation_t *));
     if (simulations->simulations == NULL) return ns_parse_simulations_error(text_json, simulations);
 
-    u_int64_t index = 0;
+    uint64_t index = 0;
     cJSON_ArrayForEach(simulation_json, simulations_json) {
         ns_parse_simulation_t *simulation = NULL;
 
@@ -74,11 +77,11 @@ ns_parse_simulations_t *ns_parse_simulations(const char *const text) {
 
 void ns_parse_simulation_free(ns_parse_simulation_t *simulation) {
     if (simulation != NULL && simulation->mods != NULL) {
-        for (u_int64_t i_m = 0; i_m < simulation->mods_length; ++i_m) {
+        for (uint64_t i_m = 0; i_m < simulation->mods_length; ++i_m) {
             ns_parse_simulation_mod_t *mod = simulation->mods[i_m];
 
             if (mod != NULL && mod->densities != NULL) {
-                for (u_int64_t i_d = 0; i_d < mod->densities_length; ++i_d) {
+                for (uint64_t i_d = 0; i_d < mod->densities_length; ++i_d) {
                     ns_parse_simulation_mods_density_t *density = mod->densities[i_d];
                     free(density);
                 }
@@ -86,7 +89,7 @@ void ns_parse_simulation_free(ns_parse_simulation_t *simulation) {
             }
 
             if (mod != NULL && mod->forces != NULL) {
-                for (u_int64_t i_f = 0; i_f < mod->densities_length; ++i_f) {
+                for (uint64_t i_f = 0; i_f < mod->densities_length; ++i_f) {
                     ns_parse_simulation_mods_force_t *force = mod->forces[i_f];
                     free(force);
                 }
@@ -104,7 +107,7 @@ void ns_parse_simulation_free(ns_parse_simulation_t *simulation) {
 
 void ns_parse_simulations_free(ns_parse_simulations_t *simulations) {
     if (simulations != NULL && simulations->simulations != NULL) {
-        for (u_int64_t i_s = 0; i_s < simulations->simulations_length; ++i_s) {
+        for (uint64_t i_s = 0; i_s < simulations->simulations_length; ++i_s) {
             ns_parse_simulation_free(simulations->simulations[i_s]);
         }
 
@@ -131,13 +134,13 @@ static bool ns_parse_simulation_check_and_assign_time_step(const cJSON *const ti
     return true;
 }
 
-static bool ns_parse_simulation_check_and_assign_ticks(const cJSON *const ticks_json, u_int64_t *ticks) {
+static bool ns_parse_simulation_check_and_assign_ticks(const cJSON *const ticks_json, uint64_t *ticks) {
     if (ticks_json == NULL || ticks == NULL) return false;
 
     if (!(cJSON_IsNumber(ticks_json) && ticks_json->valueint > 0))
         return false;
 
-    *ticks = (u_int64_t) ticks_json->valueint;
+    *ticks = (uint64_t) ticks_json->valueint;
 
     return true;
 }
@@ -157,8 +160,8 @@ ns_parse_simulation_check_and_assign_world(const cJSON *const world_json, ns_par
     ))
         return false;
 
-    world->width = (u_int64_t) width_json->valueint;
-    world->height = (u_int64_t) height_json->valueint;
+    world->width = (uint64_t) width_json->valueint;
+    world->height = (uint64_t) height_json->valueint;
 
     return true;
 }
@@ -205,7 +208,7 @@ static bool ns_parse_simulation_check_and_assign_mod(const cJSON *const mod_json
     ))
         return false;
 
-    mod->tick = (u_int64_t) tick_json->valueint;
+    mod->tick = (uint64_t) tick_json->valueint;
 
     if (cJSON_IsNull(densities_json)) {
         mod->densities_length = 0;
@@ -213,10 +216,10 @@ static bool ns_parse_simulation_check_and_assign_mod(const cJSON *const mod_json
     } else {
         const cJSON *density_json = NULL;
 
-        mod->densities_length = (u_int64_t) cJSON_GetArraySize(densities_json);
+        mod->densities_length = (uint64_t) cJSON_GetArraySize(densities_json);
         mod->densities = (ns_parse_simulation_mods_density_t **) calloc(mod->densities_length,
                                                                         sizeof(ns_parse_simulation_mods_density_t *));
-        u_int64_t index = 0;
+        uint64_t index = 0;
         cJSON_ArrayForEach(density_json, densities_json) {
             ns_parse_simulation_mods_density_t *density = NULL;
             const cJSON *x = NULL;
@@ -233,8 +236,8 @@ static bool ns_parse_simulation_check_and_assign_mod(const cJSON *const mod_json
             ))
                 return false;
 
-            density->x = (u_int64_t) x->valueint;
-            density->y = (u_int64_t) y->valueint;
+            density->x = (uint64_t) x->valueint;
+            density->y = (uint64_t) y->valueint;
 
             mod->densities[index] = density;
             index += 1;
@@ -247,10 +250,10 @@ static bool ns_parse_simulation_check_and_assign_mod(const cJSON *const mod_json
     } else {
         const cJSON *force_json = NULL;
 
-        mod->forces_length = (u_int64_t) cJSON_GetArraySize(forces_json);
+        mod->forces_length = (uint64_t) cJSON_GetArraySize(forces_json);
         mod->forces = (ns_parse_simulation_mods_force_t **) calloc(mod->forces_length,
                                                                    sizeof(ns_parse_simulation_mods_force_t *));
-        u_int64_t index = 0;
+        uint64_t index = 0;
         cJSON_ArrayForEach(force_json, forces_json) {
             ns_parse_simulation_mods_force_t *force = NULL;
             const cJSON *x = NULL;
@@ -277,8 +280,8 @@ static bool ns_parse_simulation_check_and_assign_mod(const cJSON *const mod_json
             ))
                 return false;
 
-            force->x = (u_int64_t) x->valueint;
-            force->y = (u_int64_t) y->valueint;
+            force->x = (uint64_t) x->valueint;
+            force->y = (uint64_t) y->valueint;
             force->velocity.x = velocity_x->valuedouble;
             force->velocity.y = velocity_y->valuedouble;
 
@@ -301,12 +304,12 @@ static bool ns_parse_simulation_check_and_assign_mods(const cJSON *const mods_js
 
     const cJSON *mod_json = NULL;
 
-    simulation->mods_length = (u_int64_t) cJSON_GetArraySize(mods_json);
+    simulation->mods_length = (uint64_t) cJSON_GetArraySize(mods_json);
     simulation->mods = (ns_parse_simulation_mod_t **) calloc(simulation->mods_length,
                                                              sizeof(ns_parse_simulation_mod_t *));
     if (simulation->mods == NULL) return false;
 
-    u_int64_t index = 0;
+    uint64_t index = 0;
     cJSON_ArrayForEach(mod_json, mods_json) {
         ns_parse_simulation_mod_t *mod = NULL;
 

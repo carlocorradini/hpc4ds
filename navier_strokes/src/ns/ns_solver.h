@@ -1,7 +1,7 @@
 #ifndef _NS_SOLVER_H
 #define _NS_SOLVER_H
 
-#include <stddef.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 // Maximum force velocity
@@ -19,10 +19,10 @@ typedef struct ns_cell_t {
 
 // World data snapshot
 typedef struct ns_world_t {
-    size_t world_width;
-    size_t world_width_bounds;
-    size_t world_height;
-    size_t world_height_bounds;
+    uint64_t world_width;
+    uint64_t world_width_bounds;
+    uint64_t world_height;
+    uint64_t world_height_bounds;
     ns_cell_t **world;
 } ns_world_t;
 
@@ -38,7 +38,7 @@ typedef struct ns_world_t {
  * @param time_step Tick time step
  * @return Reference to Navier Stokes data wrapper
  */
-ns_t *ns_create(size_t world_width, size_t world_height,
+ns_t *ns_create(uint64_t world_width, uint64_t world_height,
                 double viscosity, double density, double diffusion,
                 double time_step);
 
@@ -64,7 +64,7 @@ void ns_tick(ns_t *ns);
  * @param y Y coordinate
  * @return true if increased, false otherwise
  */
-bool ns_increase_density(ns_t *ns, size_t x, size_t y);
+bool ns_increase_density(ns_t *ns, uint64_t x, uint64_t y);
 
 /**
  * Apply a force in cell (x, y) with velocity (v_x, v_y).
@@ -76,7 +76,7 @@ bool ns_increase_density(ns_t *ns, size_t x, size_t y);
  * @param v_y Y velocity
  * @return true if applied, false otherwise
  */
-bool ns_apply_force(ns_t *ns, size_t x, size_t y, double v_x, double v_y);
+bool ns_apply_force(ns_t *ns, uint64_t x, uint64_t y, double v_x, double v_y);
 
 /**
  * Create a Navier Stokes world snapshot.

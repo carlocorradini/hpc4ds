@@ -1,14 +1,11 @@
 #ifndef _NS_PARSER_H
 #define _NS_PARSER_H
 
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include <cJSON.h>
+#include <stdint.h>
 
 typedef struct ns_parse_simulation_world_t {
-    u_int64_t width;
-    u_int64_t height;
+    uint64_t width;
+    uint64_t height;
 } ns_parse_simulation_world_t;
 
 typedef struct ns_parse_simulation_fluid_t {
@@ -18,8 +15,8 @@ typedef struct ns_parse_simulation_fluid_t {
 } ns_parse_simulation_fluid_t;
 
 typedef struct ns_parse_simulation_mods_density_t {
-    u_int64_t x;
-    u_int64_t y;
+    uint64_t x;
+    uint64_t y;
 } ns_parse_simulation_mods_density_t;
 
 typedef struct ns_parse_simulation_mods_forces_velocity_t {
@@ -28,22 +25,22 @@ typedef struct ns_parse_simulation_mods_forces_velocity_t {
 } ns_parse_simulation_mods_forces_velocity_t;
 
 typedef struct ns_parse_simulation_mods_force_t {
-    u_int64_t x;
-    u_int64_t y;
+    uint64_t x;
+    uint64_t y;
     ns_parse_simulation_mods_forces_velocity_t velocity;
 } ns_parse_simulation_mods_force_t;
 
 typedef struct ns_parse_simulation_mod_t {
-    u_int64_t tick;
+    uint64_t tick;
     ns_parse_simulation_mods_density_t **densities;
-    u_int64_t densities_length;
+    uint64_t densities_length;
     ns_parse_simulation_mods_force_t **forces;
-    u_int64_t forces_length;
+    uint64_t forces_length;
 } ns_parse_simulation_mod_t;
 
 typedef struct ns_parse_simulation_t {
     double time_step;
-    u_int64_t ticks;
+    uint64_t ticks;
 
     // World
     ns_parse_simulation_world_t world;
@@ -53,12 +50,12 @@ typedef struct ns_parse_simulation_t {
 
     // Mods
     ns_parse_simulation_mod_t **mods;
-    u_int64_t mods_length;
+    uint64_t mods_length;
 } ns_parse_simulation_t;
 
 typedef struct ns_parse_simulations_t {
     ns_parse_simulation_t **simulations;
-    u_int64_t simulations_length;
+    uint64_t simulations_length;
 } ns_parse_simulations_t;
 
 /**
