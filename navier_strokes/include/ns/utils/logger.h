@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include <time.h>
 
 typedef struct {
     va_list ap;
@@ -31,6 +30,7 @@ enum { LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
 const char* log_level_string(int level);
 void log_set_lock(log_LockFn fn, void *udata);
 void log_set_level(int level);
+void log_set_rank(int rank);
 void log_set_quiet(bool enable);
 void log_set_colors(bool enable);
 int log_add_callback(log_LogFn fn, void *udata, int level);

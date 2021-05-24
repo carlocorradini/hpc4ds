@@ -13,30 +13,21 @@ static const char *const usage[] = {
         NULL
 };
 
+// Arguments
+static struct {
+    char *simulations;
+    bool colors;
+} args = {
+        .simulations = NULL,
+        .colors = false,
+};
+
+static void make_args(int argc, const char **argv);
+
+static bool check_args(void);
+
 int main(int argc, const char **argv) {
-    // Arguments
-    struct argparse argparse;
-    const char *arg_simulations = NULL;
-    bool arg_colors = false;
-    struct argparse_option options[] = {
-            OPT_GROUP("Options:"),
-            OPT_HELP(),
-            OPT_STRING(0, "simulations", &arg_simulations, "Path to JSON simulations file", NULL, 0, OPT_NONEG),
-            OPT_BOOLEAN(0, "colors", &arg_colors, "Enable logger output with colors", NULL, 0, OPT_NONEG),
-            OPT_END(),
-    };
-
-    argparse_init(&argparse, options, usage, 0);
-    argparse_describe(&argparse, description, epilog);
-    argparse_parse(&argparse, argc, argv);
-
-    if (arg_simulations == NULL) {
-        log_error("`simulations` argument missing or invalid");
-        return EXIT_FAILURE;
-    }
-    log_set_colors(arg_colors);
-    // END Arguments
-
+    make_args(argc, argv);
     int rank;
     int size;
 
@@ -44,6 +35,10 @@ int main(int argc, const char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    log_set_rank(rank);
+    log_set_colors(args.colors);
+
+    if (!check_args()) MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     if (size < 2) {
         log_error("At least two processes are required, %d given", size);
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
@@ -51,7 +46,7 @@ int main(int argc, const char **argv) {
 
     if (rank == 0) {
         // Master
-        comms_master_args_t master_args = {.simulations_file_path = arg_simulations};
+        comms_master_args_t master_args = {.simulations_file_path = args.simulations};
         do_master(&master_args);
     } else {
         // Worker
@@ -60,4 +55,28 @@ int main(int argc, const char **argv) {
 
     MPI_Finalize();
     return EXIT_SUCCESS;
+}
+
+static void make_args(int argc, const char **argv) {
+    struct argparse argparse;
+    struct argparse_option options[] = {
+            OPT_GROUP("Options:"),
+            OPT_HELP(),
+            OPT_STRING(0, "simulations", &args.simulations, "Path to JSON simulations file", NULL, 0, OPT_NONEG),
+            OPT_BOOLEAN(0, "colors", &args.colors, "Enable logger output with colors", NULL, 0, OPT_NONEG),
+            OPT_END(),
+    };
+
+    argparse_init(&argparse, options, usage, 0);
+    argparse_describe(&argparse, description, epilog);
+    argparse_parse(&argparse, argc, argv);
+}
+
+static bool check_args(void) {
+    if (args.simulations == NULL) {
+        log_error("`simulations` argument missing or invalid");
+        return false;
+    }
+
+    return true;
 }

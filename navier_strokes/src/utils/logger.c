@@ -1,6 +1,10 @@
 #include "ns/utils/logger.h"
+#include <string.h>
+#include <time.h>
 
-#define MAX_CALLBACKS 32
+#define LOGGER_MAX_CALLBACKS 32
+#define LOGGER_UNKNOWN_RANK -1
+#define LOGGER_MAX_RANK_CHARS 4
 
 typedef struct {
     log_LogFn fn;
@@ -12,10 +16,15 @@ static struct {
     void *udata;
     log_LockFn lock;
     int level;
+    int rank;
     bool quiet;
     bool colors;
-    Callback callbacks[MAX_CALLBACKS];
-} L;
+    Callback callbacks[LOGGER_MAX_CALLBACKS];
+} L = {
+        .rank = LOGGER_UNKNOWN_RANK,
+        .quiet = false,
+        .colors = false,
+};
 
 static const char *level_strings[] = {
         "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
@@ -26,17 +35,25 @@ static const char *level_colors[] = {
 };
 
 static void stdout_callback(log_Event *ev) {
-    char buf[16];
-    buf[strftime(buf, sizeof(buf), "%H:%M:%S", ev->time)] = '\0';
+    char time_buf[64];
+    char rank[LOGGER_MAX_RANK_CHARS + 1] = "\0";
+
+    time_buf[strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", ev->time)] = '\0';
+    if (L.rank != LOGGER_UNKNOWN_RANK)
+        snprintf(rank, LOGGER_MAX_RANK_CHARS + 1, "%d", L.rank);
+
+    fprintf(ev->udata, "[%.*s%s] %s ",
+            (LOGGER_MAX_RANK_CHARS < strlen(rank)) ? 0 : (int) (LOGGER_MAX_RANK_CHARS - strlen(rank)),
+            "--------------------------------", rank, time_buf);
+
     if (L.colors) {
         fprintf(
-                ev->udata, "%s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
-                buf, level_colors[ev->level], level_strings[ev->level],
-                ev->file, ev->line);
+                ev->udata, "%s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
+                level_colors[ev->level], level_strings[ev->level], ev->file, ev->line);
     } else {
         fprintf(
-                ev->udata, "%s %-5s %s:%d: ",
-                buf, level_strings[ev->level], ev->file, ev->line);
+                ev->udata, "%-5s %s:%d: ",
+                level_strings[ev->level], ev->file, ev->line);
     }
     vfprintf(ev->udata, ev->fmt, ev->ap);
     fprintf(ev->udata, "\n");
@@ -44,11 +61,17 @@ static void stdout_callback(log_Event *ev) {
 }
 
 static void file_callback(log_Event *ev) {
-    char buf[64];
-    buf[strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ev->time)] = '\0';
+    char time_buf[64];
+    char rank[LOGGER_MAX_RANK_CHARS + 1] = "\0";
+
+    time_buf[strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", ev->time)] = '\0';
+    if (L.rank != LOGGER_UNKNOWN_RANK)
+        snprintf(rank, LOGGER_MAX_RANK_CHARS + 1, "%d", L.rank);
+
     fprintf(
-            ev->udata, "%s %-5s %s:%d: ",
-            buf, level_strings[ev->level], ev->file, ev->line);
+            ev->udata, "[%.*s%s] %s %-5s %s:%d: ",
+            (LOGGER_MAX_RANK_CHARS < strlen(rank)) ? 0 : (int) (LOGGER_MAX_RANK_CHARS - strlen(rank)),
+            "--------------------------------", rank, time_buf, level_strings[ev->level], ev->file, ev->line);
     vfprintf(ev->udata, ev->fmt, ev->ap);
     fprintf(ev->udata, "\n");
     fflush(ev->udata);
@@ -66,7 +89,6 @@ const char *log_level_string(int level) {
     return level_strings[level];
 }
 
-
 void log_set_lock(log_LockFn fn, void *udata) {
     L.lock = fn;
     L.udata = udata;
@@ -74,6 +96,10 @@ void log_set_lock(log_LockFn fn, void *udata) {
 
 void log_set_level(int level) {
     L.level = level;
+}
+
+void log_set_rank(int rank) {
+    L.rank = rank;
 }
 
 void log_set_quiet(bool enable) {
@@ -85,7 +111,7 @@ void log_set_colors(bool enable) {
 }
 
 int log_add_callback(log_LogFn fn, void *udata, int level) {
-    for (int i = 0; i < MAX_CALLBACKS; i++) {
+    for (int i = 0; i < LOGGER_MAX_CALLBACKS; i++) {
         if (!L.callbacks[i].fn) {
             L.callbacks[i] = (Callback) {fn, udata, level};
             return 0;
@@ -123,7 +149,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...) {
         va_end(ev.ap);
     }
 
-    for (int i = 0; i < MAX_CALLBACKS && L.callbacks[i].fn; i++) {
+    for (int i = 0; i < LOGGER_MAX_CALLBACKS && L.callbacks[i].fn; i++) {
         Callback *cb = &L.callbacks[i];
         if (level >= cb->level) {
             init_event(&ev, cb->udata);
