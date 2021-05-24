@@ -1,5 +1,5 @@
-#ifndef _COMMS_WORKER_H
-#define _COMMS_WORKER_H
+#ifndef _NS_NODES_WORKER_H
+#define _NS_NODES_WORKER_H
 
 /**
  * Execute worker operations.

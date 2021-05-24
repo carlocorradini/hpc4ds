@@ -1,5 +1,5 @@
-#ifndef _NS_PARSER_H
-#define _NS_PARSER_H
+#ifndef _NS_UTILS_PARSER_H
+#define _NS_UTILS_PARSER_H
 
 #include <stdint.h>
 

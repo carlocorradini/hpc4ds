@@ -1,7 +1,7 @@
-#ifndef _NS_STRINGIFY_H
-#define _NS_STRINGIFY_H
+#ifndef _NS_UTILS_STRINGIFY_H
+#define _NS_UTILS_STRINGIFY_H
 
-#include "ns_parser.h"
+#include "parser.h"
 
 /**
  * Convert a simulation into a JSON string.

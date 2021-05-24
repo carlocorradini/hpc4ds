@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.11)
 project(navierstokes C)
 
 # === Option
@@ -38,12 +38,17 @@ endif ()
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_COMPILER mpicc)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wshadow -Wdouble-promotion -Wformat -Wformat-security -Wundef -Wconversion -fno-common -pedantic")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
 
+# Include directories
+include_directories("${PROJECT_SOURCE_DIR}/include")
+include_directories("${PROJECT_SOURCE_DIR}/src")
+
 # Headers
-file(GLOB_RECURSE HEADER_FILES src/*.h)
+file(GLOB_RECURSE HEADER_FILES "${PROJECT_SOURCE_DIR}/include/*.h")
 # Sources
-file(GLOB_RECURSE SOURCE_FILES src/*.c)
+file(GLOB_RECURSE SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/*.c")
 
 # Executable
 add_executable(navierstokes ${SOURCE_FILES} ${HEADER_FILES})

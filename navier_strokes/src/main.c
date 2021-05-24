@@ -3,8 +3,8 @@
 #include <stdbool.h>
 #include <mpi.h>
 #include <argparse.h>
-#include "comms/comms_master.h"
-#include "comms/comms_worker.h"
+#include "ns/nodes/master.h"
+#include "ns/nodes/worker.h"
 
 static const char *description = "\nNavier Stokes simulations in high performance computing environment.";
 static const char *epilog = "\n© Carlo Corradini & Massimiliano Fronza";

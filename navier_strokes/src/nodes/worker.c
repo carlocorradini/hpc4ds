@@ -1,8 +1,8 @@
-#include "comms_worker.h"
+#include "ns/nodes/worker.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
-#include "../ns/ns_parser.h"
+#include "ns/utils/parser.h"
 
 static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_simulation_t *simulation, uint64_t tick);
 

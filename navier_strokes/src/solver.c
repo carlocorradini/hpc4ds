@@ -1,4 +1,4 @@
-#include "ns_solver.h"
+#include "ns/solver.h"
 #include <stdlib.h>
 #include <stdio.h>
 

@@ -1,11 +1,11 @@
-#include "comms_master.h"
+#include "ns/nodes/master.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <mpi.h>
-#include "../ns/ns_parser.h"
-#include "../ns/ns_stringify.h"
+#include "ns/utils/parser.h"
+#include "ns/utils/stringify.h"
 
 void do_master(const comms_master_args_t *const args) {
     int rank;
@@ -28,7 +28,7 @@ void do_master(const comms_master_args_t *const args) {
         // FIXME
         worker = size - 1;
 
-        fprintf(stdout, "Sending simulation %ld to worker node %d\n", i_s, worker);
+        fprintf(stdout, "Sending simulation %ld to worker nodes %d\n", i_s, worker);
         MPI_Send(simulation_string, (int) strlen(simulation_string), MPI_CHAR, worker, 0, MPI_COMM_WORLD);
 
         free(simulation_string);
