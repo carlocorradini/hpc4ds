@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.11)
-project(navierstokes C)
+
+# === Project
+project(navierstokes
+        VERSION 0.0.1
+        DESCRIPTION "Navier Stokes simulations in high performance computing environment"
+        LANGUAGES C)
+# Configuration File
+configure_file("${PROJECT_SOURCE_DIR}/configs/config.h.in" "${PROJECT_SOURCE_DIR}/include/ns/config.h" @ONLY)
 
 # === Option
 option(NO_OPEN_MP "Disable OpenMP" OFF)

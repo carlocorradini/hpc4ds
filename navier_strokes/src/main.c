@@ -1,12 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <mpi.h>
 #include <argparse.h>
+#include "ns/config.h"
 #include "ns/nodes/master.h"
 #include "ns/nodes/worker.h"
 
-static const char *description = "\nNavier Stokes simulations in high performance computing environment.";
+static const char *description = PROJECT_DESCRIPTION "\n\tv." PROJECT_VERSION;
 static const char *epilog = "\n© Carlo Corradini & Massimiliano Fronza";
 static const char *const usage[] = {
         "mpirun -n <#> ./navierstokes --simulations=./simulations.json",
@@ -17,7 +17,6 @@ int main(int argc, const char **argv) {
     // Arguments
     struct argparse argparse;
     const char *arg_simulations = NULL;
-    bool arg_m_worker = false;
     struct argparse_option options[] = {
             OPT_GROUP("Options:"),
             OPT_HELP(),
