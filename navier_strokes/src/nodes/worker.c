@@ -103,7 +103,6 @@ void do_worker(const node_worker_args_t *const args) {
             log_debug("Saving world snapshot on tick %ld", tick);
             for (size_t y = 0; y < world->world_height_bounds; ++y) {
                 for (size_t x = 0; x < world->world_width_bounds; ++x) {
-                    const double density = *world->world[y][x].density;
                 }
             }
         }

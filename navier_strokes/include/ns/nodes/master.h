@@ -5,7 +5,7 @@
  * Master node arguments.
  */
 typedef struct node_master_args_t {
-    const char *simulations_file_path;
+    const char *simulations;
 } node_master_args_t;
 
 /**

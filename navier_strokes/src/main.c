@@ -51,7 +51,7 @@ int main(int argc, const char **argv) {
 
     if (rank == 0) {
         // Master
-        node_master_args_t master_args = {.simulations_file_path = args.simulations};
+        node_master_args_t master_args = {.simulations = args.simulations};
         do_master(&master_args);
     } else {
         // Worker
