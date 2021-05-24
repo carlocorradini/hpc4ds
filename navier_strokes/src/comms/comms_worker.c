@@ -4,7 +4,7 @@
 #include <mpi.h>
 #include "../ns/ns_parser.h"
 
-static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_parse_simulation_t *simulation, uint64_t tick);
+static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_simulation_t *simulation, uint64_t tick);
 
 void do_worker(void) {
     int rank;
@@ -24,11 +24,11 @@ void do_worker(void) {
 
     printf("Worker %d Reading: %s\n", rank, simulation_string);
 
-    ns_parse_simulation_t *simulation = ns_parse_simulation(simulation_string);
+    ns_simulation_t *simulation = ns_parse_simulation(simulation_string);
     free(simulation_string);
     ns_parse_simulation_free(simulation);
 
-    /*ns_parse_simulation_t *simulation = NULL;
+    /*ns_simulation_t *simulation = NULL;
         ns_t *ns = NULL;
         ns_world_t *world = NULL;
 
@@ -66,7 +66,7 @@ void do_worker(void) {
         ns_free(ns);*/
 }
 
-static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_parse_simulation_t *const simulation, uint64_t tick) {
+static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_simulation_t *const simulation, uint64_t tick) {
     if (simulation == NULL || simulation->mods == NULL || tick < 0 || tick > simulation->ticks - 1)
         return NULL;
 

@@ -16,11 +16,11 @@ static bool ns_parse_simulation_check_and_assign_fluid(const cJSON *fluid_json, 
 
 static bool ns_parse_simulation_check_and_assign_mod(const cJSON *mod_json, ns_parse_simulation_mod_t *mod);
 
-static bool ns_parse_simulation_check_and_assign_mods(const cJSON *mods_json, ns_parse_simulation_t *simulation);
+static bool ns_parse_simulation_check_and_assign_mods(const cJSON *mods_json, ns_simulation_t *simulation);
 
-static void *ns_parse_simulation_error(cJSON *file_json, ns_parse_simulation_t *simulation);
+static void *ns_parse_simulation_error(cJSON *file_json, ns_simulation_t *simulation);
 
-static void *ns_parse_simulations_error(cJSON *file_json, ns_parse_simulations_t *simulations);
+static void *ns_parse_simulations_error(cJSON *file_json, ns_simulations_t *simulations);
 /**
  * END Private definitions
  */
@@ -28,12 +28,12 @@ static void *ns_parse_simulations_error(cJSON *file_json, ns_parse_simulations_t
 /**
  * Public
  */
-ns_parse_simulation_t *ns_parse_simulation(const char *const text) {
+ns_simulation_t *ns_parse_simulation(const char *const text) {
     if (text == NULL) return NULL;
-    ns_parse_simulation_t *simulation = NULL;
+    ns_simulation_t *simulation = NULL;
     cJSON *simulation_json = NULL;
 
-    simulation = (ns_parse_simulation_t *) malloc(sizeof(ns_parse_simulation_t));
+    simulation = (ns_simulation_t *) malloc(sizeof(ns_simulation_t));
     if (simulation == NULL) return ns_parse_simulation_error(simulation_json, simulation);
 
     simulation_json = cJSON_Parse(text);
@@ -58,14 +58,14 @@ ns_parse_simulation_t *ns_parse_simulation(const char *const text) {
 
 }
 
-ns_parse_simulations_t *ns_parse_simulations(const char *const text) {
+ns_simulations_t *ns_parse_simulations(const char *const text) {
     if (text == NULL) return NULL;
-    ns_parse_simulations_t *simulations = NULL;
+    ns_simulations_t *simulations = NULL;
     cJSON *text_json = NULL;
     const cJSON *simulation_json = NULL;
     const cJSON *simulations_json = NULL;
 
-    simulations = (ns_parse_simulations_t *) malloc(sizeof(ns_parse_simulations_t));
+    simulations = (ns_simulations_t *) malloc(sizeof(ns_simulations_t));
     if (simulations == NULL) return ns_parse_simulations_error(text_json, simulations);
 
     text_json = cJSON_Parse(text);
@@ -75,14 +75,14 @@ ns_parse_simulations_t *ns_parse_simulations(const char *const text) {
     if (!cJSON_IsArray(simulations_json)) return ns_parse_simulations_error(text_json, simulations);
 
     simulations->simulations_length = (uint64_t) cJSON_GetArraySize(simulations_json);
-    simulations->simulations = (ns_parse_simulation_t **) calloc(simulations->simulations_length,
-                                                                 sizeof(ns_parse_simulation_t *));
+    simulations->simulations = (ns_simulation_t **) calloc(simulations->simulations_length,
+                                                           sizeof(ns_simulation_t *));
     if (simulations->simulations == NULL) return ns_parse_simulations_error(text_json, simulations);
 
     uint64_t index = 0;
     cJSON_ArrayForEach(simulation_json, simulations_json) {
         char *simulation_text = cJSON_Print(simulation_json);
-        ns_parse_simulation_t *simulation = ns_parse_simulation(simulation_text);
+        ns_simulation_t *simulation = ns_parse_simulation(simulation_text);
         free(simulation_text);
 
         if (simulation == NULL)
@@ -96,7 +96,7 @@ ns_parse_simulations_t *ns_parse_simulations(const char *const text) {
     return simulations;
 }
 
-void ns_parse_simulation_free(ns_parse_simulation_t *simulation) {
+void ns_parse_simulation_free(ns_simulation_t *simulation) {
     if (simulation != NULL && simulation->mods != NULL) {
         for (uint64_t i_m = 0; i_m < simulation->mods_length; ++i_m) {
             ns_parse_simulation_mod_t *mod = simulation->mods[i_m];
@@ -126,7 +126,7 @@ void ns_parse_simulation_free(ns_parse_simulation_t *simulation) {
     free(simulation);
 }
 
-void ns_parse_simulations_free(ns_parse_simulations_t *simulations) {
+void ns_parse_simulations_free(ns_simulations_t *simulations) {
     if (simulations != NULL && simulations->simulations != NULL) {
         for (uint64_t i_s = 0; i_s < simulations->simulations_length; ++i_s) {
             ns_parse_simulation_free(simulations->simulations[i_s]);
@@ -314,7 +314,7 @@ static bool ns_parse_simulation_check_and_assign_mod(const cJSON *const mod_json
     return true;
 }
 
-static bool ns_parse_simulation_check_and_assign_mods(const cJSON *const mods_json, ns_parse_simulation_t *simulation) {
+static bool ns_parse_simulation_check_and_assign_mods(const cJSON *const mods_json, ns_simulation_t *simulation) {
     if (simulation == NULL) return false;
     if (mods_json == NULL) {
         simulation->mods_length = 0;
@@ -347,13 +347,13 @@ static bool ns_parse_simulation_check_and_assign_mods(const cJSON *const mods_js
     return true;
 }
 
-static void *ns_parse_simulation_error(cJSON *file_json, ns_parse_simulation_t *simulation) {
+static void *ns_parse_simulation_error(cJSON *file_json, ns_simulation_t *simulation) {
     cJSON_Delete(file_json);
     ns_parse_simulation_free(simulation);
     return NULL;
 }
 
-static void *ns_parse_simulations_error(cJSON *file_json, ns_parse_simulations_t *simulations) {
+static void *ns_parse_simulations_error(cJSON *file_json, ns_simulations_t *simulations) {
     cJSON_Delete(file_json);
     ns_parse_simulations_free(simulations);
     return NULL;

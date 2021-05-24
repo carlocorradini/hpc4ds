@@ -38,7 +38,7 @@ typedef struct ns_parse_simulation_mod_t {
     uint64_t forces_length;
 } ns_parse_simulation_mod_t;
 
-typedef struct ns_parse_simulation_t {
+typedef struct ns_simulation_t {
     double time_step;
     uint64_t ticks;
 
@@ -51,12 +51,12 @@ typedef struct ns_parse_simulation_t {
     // Mods
     ns_parse_simulation_mod_t **mods;
     uint64_t mods_length;
-} ns_parse_simulation_t;
+} ns_simulation_t;
 
-typedef struct ns_parse_simulations_t {
-    ns_parse_simulation_t **simulations;
+typedef struct ns_simulations_t {
+    ns_simulation_t **simulations;
     uint64_t simulations_length;
-} ns_parse_simulations_t;
+} ns_simulations_t;
 
 /**
  * Parse text string into simulation struct.
@@ -65,7 +65,7 @@ typedef struct ns_parse_simulations_t {
  * @param text Text string to parse
  * @return Parsed JSON simulation struct, NULL otherwise
  */
-ns_parse_simulation_t *ns_parse_simulation(const char *text);
+ns_simulation_t *ns_parse_simulation(const char *text);
 
 /**
  * Parse text string into simulations struct.
@@ -74,20 +74,20 @@ ns_parse_simulation_t *ns_parse_simulation(const char *text);
  * @param text Text string to parse
  * @return Parsed JSON simulations struct, NULL otherwise
  */
-ns_parse_simulations_t *ns_parse_simulations(const char *text);
+ns_simulations_t *ns_parse_simulations(const char *text);
 
 /**
  * Free the parsed simulation.
  *
  * @param simulation Reference to parsed simulation
  */
-void ns_parse_simulation_free(ns_parse_simulation_t *simulation);
+void ns_parse_simulation_free(ns_simulation_t *simulation);
 
 /**
  * Free the parsed simulations.
  *
  * @param simulations Reference to parsed simulations
  */
-void ns_parse_simulations_free(ns_parse_simulations_t *simulations);
+void ns_parse_simulations_free(ns_simulations_t *simulations);
 
 #endif

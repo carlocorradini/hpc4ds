@@ -10,6 +10,6 @@
  * @param simulation Simulation to convert
  * @return A JSON string representing the simulation, NULL otherwise.
  */
-char *ns_stringify_simulation(const ns_parse_simulation_t *simulation);
+char *ns_stringify_simulation(const ns_simulation_t *simulation);
 
 #endif

@@ -12,7 +12,7 @@ static void *ns_stringify_simulation_error(cJSON *simulation_json);
 /**
  * Public
  */
-char *ns_stringify_simulation(const ns_parse_simulation_t *const simulation) {
+char *ns_stringify_simulation(const ns_simulation_t *const simulation) {
     if (simulation == NULL) return NULL;
     char *text = NULL;
     cJSON *simulation_json = NULL;
