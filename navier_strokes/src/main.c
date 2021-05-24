@@ -59,6 +59,7 @@ int main(int argc, const char **argv) {
         do_worker(&worker_args);
     }
 
+    log_info("Terminating...");
     MPI_Finalize();
     return EXIT_SUCCESS;
 }
