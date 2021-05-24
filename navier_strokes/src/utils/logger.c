@@ -90,12 +90,12 @@ const char *log_level_string(int level) {
 }
 
 int log_level_int(const char *level) {
-    if (strcmp("TRACE", level) == 0) return LOG_TRACE;
-    if (strcmp("DEBUG", level) == 0) return LOG_DEBUG;
-    if (strcmp("INFO", level) == 0) return LOG_INFO;
-    if (strcmp("WARN", level) == 0) return LOG_WARN;
-    if (strcmp("ERROR", level) == 0) return LOG_ERROR;
-    if (strcmp("FATAL", level) == 0) return LOG_FATAL;
+    if (strncmp("TRACE", level, 8) == 0) return LOG_TRACE;
+    if (strncmp("DEBUG", level, 8) == 0) return LOG_DEBUG;
+    if (strncmp("INFO", level, 8) == 0) return LOG_INFO;
+    if (strncmp("WARN", level, 8) == 0) return LOG_WARN;
+    if (strncmp("ERROR", level, 8) == 0) return LOG_ERROR;
+    if (strncmp("FATAL", level, 8) == 0) return LOG_FATAL;
 
     return LOG_INFO;
 }
