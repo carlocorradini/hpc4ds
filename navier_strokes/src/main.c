@@ -4,7 +4,7 @@
 #include <mpi.h>
 #include <argparse.h>
 #include "comms/comms_master.h"
-#include "comms/comms_slave.h"
+#include "comms/comms_worker.h"
 
 static const char *description = "\nNavier Stokes simulations in high performance computing environment.";
 static const char *epilog = "\n© Carlo Corradini & Massimiliano Fronza";
@@ -52,8 +52,8 @@ int main(int argc, const char **argv) {
         comms_master_args_t master_args = {.simulations_file_path = arg_simulations};
         do_master(&master_args);
     } else {
-        // Slave
-        do_slave();
+        // Worker
+        do_worker();
     }
 
     MPI_Finalize();

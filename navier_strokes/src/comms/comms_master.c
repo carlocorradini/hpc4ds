@@ -6,9 +6,6 @@
 #include <mpi.h>
 #include "../ns/ns_parser.h"
 #include "../ns/ns_stringify.h"
-#include "../ns/ns_solver.h"
-
-static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_parse_simulation_t *simulation, uint64_t tick);
 
 void do_master(const comms_master_args_t *const args) {
     int rank;
@@ -38,17 +35,4 @@ void do_master(const comms_master_args_t *const args) {
     }
 
     ns_parse_simulations_free(simulations);
-}
-
-static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_parse_simulation_t *const simulation, uint64_t tick) {
-    if (simulation == NULL || simulation->mods == NULL || tick < 0 || tick > simulation->ticks - 1)
-        return NULL;
-
-    for (uint64_t i = 0; i < simulation->mods_length; ++i) {
-        ns_parse_simulation_mod_t *mod = simulation->mods[i];
-
-        if (mod->tick == tick) return mod;
-    }
-
-    return NULL;
 }

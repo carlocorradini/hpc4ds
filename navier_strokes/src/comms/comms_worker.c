@@ -1,10 +1,12 @@
-#include "comms_slave.h"
+#include "comms_worker.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
 #include "../ns/ns_parser.h"
 
-void do_slave(void) {
+static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_parse_simulation_t *simulation, uint64_t tick);
+
+void do_worker(void) {
     int rank;
     int size;
     MPI_Status status;
@@ -62,4 +64,17 @@ void do_slave(void) {
 
         ns_free_world(world);
         ns_free(ns);*/
+}
+
+static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_parse_simulation_t *const simulation, uint64_t tick) {
+    if (simulation == NULL || simulation->mods == NULL || tick < 0 || tick > simulation->ticks - 1)
+        return NULL;
+
+    for (uint64_t i = 0; i < simulation->mods_length; ++i) {
+        ns_parse_simulation_mod_t *mod = simulation->mods[i];
+
+        if (mod->tick == tick) return mod;
+    }
+
+    return NULL;
 }
