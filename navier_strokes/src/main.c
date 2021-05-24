@@ -1,10 +1,10 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <mpi.h>
 #include <argparse.h>
 #include "ns/config.h"
 #include "ns/nodes/master.h"
 #include "ns/nodes/worker.h"
+#include "ns/utils/logger.h"
 
 static const char *description = PROJECT_DESCRIPTION "\n\tv." PROJECT_VERSION;
 static const char *epilog = "\n© Carlo Corradini & Massimiliano Fronza";
@@ -17,10 +17,12 @@ int main(int argc, const char **argv) {
     // Arguments
     struct argparse argparse;
     const char *arg_simulations = NULL;
+    bool arg_colors = false;
     struct argparse_option options[] = {
             OPT_GROUP("Options:"),
             OPT_HELP(),
             OPT_STRING(0, "simulations", &arg_simulations, "Path to JSON simulations file", NULL, 0, OPT_NONEG),
+            OPT_BOOLEAN(0, "colors", &arg_colors, "Enable logger output with colors", NULL, 0, OPT_NONEG),
             OPT_END(),
     };
 
@@ -29,9 +31,10 @@ int main(int argc, const char **argv) {
     argparse_parse(&argparse, argc, argv);
 
     if (arg_simulations == NULL) {
-        fprintf(stderr, "[ERROR]: `simulations` argument missing or invalid\n");
+        log_error("`simulations` argument missing or invalid");
         return EXIT_FAILURE;
     }
+    log_set_colors(arg_colors);
     // END Arguments
 
     int rank;
@@ -42,7 +45,7 @@ int main(int argc, const char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     if (size < 2) {
-        fprintf(stderr, "[ERROR]: At least two processes are required, %d given\n", size);
+        log_error("At least two processes are required, %d given", size);
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
 
