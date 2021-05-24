@@ -2,68 +2,99 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
+#include "ns/solver.h"
+#include "ns/utils/logger.h"
 #include "ns/utils/parser.h"
+
+#define MASTER_NODE_RANK 0
 
 static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_simulation_t *simulation, uint64_t tick);
 
-void do_worker(void) {
+void do_worker(const node_worker_args_t *const args) {
     int rank;
     int size;
     MPI_Status status;
-    int chars;
+    char *simulation_string = NULL;
+    int simulation_string_length;
+    ns_simulation_t *simulation = NULL;
+    ns_t *ns = NULL;
+    ns_world_t *world = NULL;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     MPI_Probe(0, 0, MPI_COMM_WORLD, &status);
-    MPI_Get_count(&status, MPI_CHAR, &chars);
+    MPI_Get_count(&status, MPI_CHAR, &simulation_string_length);
 
-    // Allocate a buffer just big enough to hold the incoming buffer
-    char *simulation_string = (char *) calloc((unsigned long) chars, sizeof(char));
-    MPI_Recv(simulation_string, chars, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    // Allocate buffer just big enough to hold the incoming buffer
+    simulation_string = (char *) calloc((unsigned long) simulation_string_length, sizeof(char));
+    if (simulation_string == NULL) {
+        log_error("Unable to allocate simulation string buffer of %d chars", simulation_string_length);
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
 
-    printf("Worker %d Reading: %s\n", rank, simulation_string);
+    log_info("Reading simulation composed by %d chars", simulation_string_length);
+    MPI_Recv(simulation_string, simulation_string_length, MPI_CHAR, MASTER_NODE_RANK, 0, MPI_COMM_WORLD,
+             MPI_STATUS_IGNORE);
 
-    ns_simulation_t *simulation = ns_parse_simulation(simulation_string);
-    free(simulation_string);
-    ns_parse_simulation_free(simulation);
+    log_info("Parsing simulation");
+    simulation = ns_parse_simulation(simulation_string);
+    if (simulation == NULL) {
+        log_error("Unable to parse simulation");
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
 
-    /*ns_simulation_t *simulation = NULL;
-        ns_t *ns = NULL;
-        ns_world_t *world = NULL;
+    ns = ns_create(simulation->world.width, simulation->world.height,
+                   simulation->fluid.viscosity, simulation->fluid.density, simulation->fluid.diffusion,
+                   simulation->time_step);
+    if (ns == NULL) {
+        log_error("Unable to allocate ns structure");
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+    world = ns_get_world(ns);
+    if (world == NULL) {
+        log_error("Unable to allocate world structure");
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
 
-        simulation = simulations->simulations[i_s];
-        ns = ns_create(simulation->world.width, simulation->world.height,
-                       simulation->fluid.viscosity, simulation->fluid.density, simulation->fluid.diffusion,
-                       simulation->time_step);
-        world = ns_get_world(ns);
+    log_info("Starting simulation");
+    log_info("Simulation of %ld ticks", simulation->ticks);
+    for (uint64_t tick = 0; tick <= simulation->ticks; ++tick) {
+        log_debug("Init tick %ld", tick);
+        const ns_parse_simulation_mod_t *const mod = find_mod_by_tick(simulation, tick);
 
-        for (uint64_t tick = 0; tick < simulation->ticks; ++tick) {
-            const ns_parse_simulation_mod_t *const mod = find_mod_by_tick(simulation, tick);
+        if (mod != NULL) {
+            log_debug("Applying mod for tick %ld", tick);
 
-            if (mod != NULL) {
-                for (uint64_t i_d = 0; i_d < mod->densities_length; ++i_d) {
-                    const ns_parse_simulation_mods_density_t *const density = mod->densities[i_d];
-                    ns_increase_density(ns, density->x, density->y);
-                }
-
-                for (uint64_t i_f = 0; i_f < mod->forces_length; ++i_f) {
-                    const ns_parse_simulation_mods_force_t *const force = mod->forces[i_f];
-                    ns_apply_force(ns, force->x, force->y, force->velocity.x, force->velocity.y);
-                }
+            for (uint64_t i_d = 0; i_d < mod->densities_length; ++i_d) {
+                const ns_parse_simulation_mods_density_t *const density = mod->densities[i_d];
+                ns_increase_density(ns, density->x, density->y);
             }
 
-            if (tick != 0) ns_tick(ns);
-
-            for (size_t y = 0; y < world->world_height_bounds; ++y) {
-                for (size_t x = 0; x < world->world_width_bounds; ++x) {
-                    const double density = *world->world[y][x].density;
-                }
+            for (uint64_t i_f = 0; i_f < mod->forces_length; ++i_f) {
+                const ns_parse_simulation_mods_force_t *const force = mod->forces[i_f];
+                ns_apply_force(ns, force->x, force->y, force->velocity.x, force->velocity.y);
             }
+        } else {
+            log_debug("Mod not found for tick %ld", tick);
         }
 
-        ns_free_world(world);
-        ns_free(ns);*/
+        if (tick != 0) ns_tick(ns);
+        log_debug("Tick %ld computed", tick);
+
+        log_info("Saving world snapshot on tick %ld", tick);
+        for (size_t y = 0; y < world->world_height_bounds; ++y) {
+            for (size_t x = 0; x < world->world_width_bounds; ++x) {
+                const double density = *world->world[y][x].density;
+            }
+        }
+    }
+    log_info("Simulation terminated");
+
+    free(simulation_string);
+    ns_parse_simulation_free(simulation);
+    ns_free_world(world);
+    ns_free(ns);
 }
 
 static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_simulation_t *const simulation, uint64_t tick) {

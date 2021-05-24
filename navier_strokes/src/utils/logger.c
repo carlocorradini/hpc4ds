@@ -89,6 +89,17 @@ const char *log_level_string(int level) {
     return level_strings[level];
 }
 
+int log_level_int(const char *level) {
+    if (strcmp("TRACE", level) == 0) return LOG_TRACE;
+    if (strcmp("DEBUG", level) == 0) return LOG_DEBUG;
+    if (strcmp("INFO", level) == 0) return LOG_INFO;
+    if (strcmp("WARN", level) == 0) return LOG_WARN;
+    if (strcmp("ERROR", level) == 0) return LOG_ERROR;
+    if (strcmp("FATAL", level) == 0) return LOG_FATAL;
+
+    return LOG_INFO;
+}
+
 void log_set_lock(log_LockFn fn, void *udata) {
     L.lock = fn;
     L.udata = udata;

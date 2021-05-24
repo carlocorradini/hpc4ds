@@ -10,15 +10,19 @@ static const char *description = PROJECT_DESCRIPTION "\n\tv." PROJECT_VERSION;
 static const char *epilog = "\n© Carlo Corradini & Massimiliano Fronza";
 static const char *const usage[] = {
         "mpirun -n <#> ./navierstokes --simulations=./simulations.json",
+        "mpirun -n <#> ./navierstokes --simulations=./simulations.json --colors",
+        "mpirun -n <#> ./navierstokes --simulations=./simulations.json --colors --loglevel=DEBUG",
         NULL
 };
 
 // Arguments
 static struct {
     char *simulations;
+    char *loglevel;
     bool colors;
 } args = {
         .simulations = NULL,
+        .loglevel = "INFO",
         .colors = false,
 };
 
@@ -36,6 +40,7 @@ int main(int argc, const char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     log_set_rank(rank);
+    log_set_level(log_level_int(args.loglevel));
     log_set_colors(args.colors);
 
     if (!check_args()) MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
@@ -46,11 +51,12 @@ int main(int argc, const char **argv) {
 
     if (rank == 0) {
         // Master
-        comms_master_args_t master_args = {.simulations_file_path = args.simulations};
+        node_master_args_t master_args = {.simulations_file_path = args.simulations};
         do_master(&master_args);
     } else {
         // Worker
-        do_worker();
+        node_worker_args_t worker_args = {};
+        do_worker(&worker_args);
     }
 
     MPI_Finalize();
@@ -63,7 +69,9 @@ static void make_args(int argc, const char **argv) {
             OPT_GROUP("Options:"),
             OPT_HELP(),
             OPT_STRING(0, "simulations", &args.simulations, "Path to JSON simulations file", NULL, 0, OPT_NONEG),
-            OPT_BOOLEAN(0, "colors", &args.colors, "Enable logger output with colors", NULL, 0, OPT_NONEG),
+            OPT_STRING(0, "loglevel", &args.loglevel, "Logger minimum level. Default to `INFO`", NULL, 0, OPT_NONEG),
+            OPT_BOOLEAN(0, "colors", &args.colors, "Enable logger output with colors.", NULL, 0,
+                        OPT_NONEG),
             OPT_END(),
     };
 

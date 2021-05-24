@@ -59,7 +59,11 @@ ns_t *ns_create(uint64_t world_width, uint64_t world_height,
                 double viscosity, double density, double diffusion,
                 double time_step) {
     uint64_t i;
-    ns_t *ns = (ns_t *) malloc(sizeof(ns_t));
+    bool error = false;
+    ns_t *ns = NULL;
+
+    ns = (ns_t *) malloc(sizeof(ns_t));
+    if (ns == NULL) return NULL;
 
     // World
     ns->world_width = world_width;
@@ -81,34 +85,64 @@ ns_t *ns_create(uint64_t world_width, uint64_t world_height,
     ns->dense = (double **) calloc(ns->world_height_bounds, sizeof(double *));
     ns->dense_prev = (double **) calloc(ns->world_height_bounds, sizeof(double *));
 
+    if (ns->u == NULL || ns->u_prev == NULL
+        || ns->v == NULL || ns->v_prev == NULL
+        || ns->dense == NULL || ns->dense_prev == NULL) {
+        error = true;
+    }
+
+    if (!error) {
 #pragma omp parallel for \
     schedule(auto) \
-    default(none) private(i) shared(ns)
-    for (i = 0; i < ns->world_height_bounds; ++i) {
-        ns->u[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
-        ns->u_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
-        ns->v[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
-        ns->v_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
-        ns->dense[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
-        ns->dense_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+    default(none) private(i) shared(ns, error)
+        for (i = 0; i < ns->world_height_bounds; ++i) {
+            if (error) {
+#pragma omp cancel for
+            }
+            ns->u[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+            ns->u_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+            ns->v[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+            ns->v_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+            ns->dense[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+            ns->dense_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
+
+            if (ns->u[i] == NULL || ns->u_prev[i] == NULL
+                || ns->v[i] == NULL || ns->v_prev[i] == NULL
+                || ns->dense[i] == NULL || ns->dense_prev[i] == NULL) {
+#pragma omp critical
+                error = true;
+            }
+        }
+    }
+
+    if (error) {
+        ns_free(ns);
+        return NULL;
     }
 
     return ns;
 }
 
 void ns_free(ns_t *ns) {
+    if (ns == NULL) return;
     uint64_t i;
 
 #pragma omp parallel for \
     schedule(auto) \
     default(none) private(i) shared(ns)
     for (i = 0; i < ns->world_height_bounds; ++i) {
-        free(ns->u[i]);
-        free(ns->u_prev[i]);
-        free(ns->v[i]);
-        free(ns->v_prev[i]);
-        free(ns->dense[i]);
-        free(ns->dense_prev[i]);
+        if (ns->u != NULL)
+            free(ns->u[i]);
+        if (ns->u_prev != NULL)
+            free(ns->u_prev[i]);
+        if (ns->v != NULL)
+            free(ns->v[i]);
+        if (ns->v_prev != NULL)
+            free(ns->v_prev[i]);
+        if (ns->dense != NULL)
+            free(ns->dense[i]);
+        if (ns->dense_prev != NULL)
+            free(ns->dense_prev[i]);
     }
 
     free(ns->u);

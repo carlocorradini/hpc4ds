@@ -2,8 +2,16 @@
 #define _NS_NODES_WORKER_H
 
 /**
- * Execute worker operations.
+ * Worker node arguments.
  */
-void do_worker(void);
+typedef struct node_worker_args_t {
+} node_worker_args_t;
+
+/**
+ * Execute worker operations.
+ *
+ * @param args Worker arguments
+ */
+void do_worker(const node_worker_args_t *args);
 
 #endif

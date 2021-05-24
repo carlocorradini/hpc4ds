@@ -2,17 +2,17 @@
 #define _NS_NODES_MASTER_H
 
 /**
- * Master nodes arguments.
+ * Master node arguments.
  */
-typedef struct comms_master_args_t {
+typedef struct node_master_args_t {
     const char *simulations_file_path;
-} comms_master_args_t;
+} node_master_args_t;
 
 /**
  * Execute master operations.
  *
  * @param args Master arguments
  */
-void do_master(const comms_master_args_t *args);
+void do_master(const node_master_args_t *args);
 
 #endif
