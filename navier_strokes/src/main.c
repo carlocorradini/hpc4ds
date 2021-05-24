@@ -6,7 +6,7 @@
 #include "ns/nodes/worker.h"
 #include "ns/utils/logger.h"
 
-static const char *description = PROJECT_DESCRIPTION "\n\tv." PROJECT_VERSION;
+static const char *description = "\n" PROJECT_DESCRIPTION "\n\tv." PROJECT_VERSION;
 static const char *epilog = "\n© Carlo Corradini & Massimiliano Fronza";
 static const char *const usage[] = {
         "mpirun -n <#> ./navierstokes --simulations=./simulations.json",
@@ -70,8 +70,8 @@ static void make_args(int argc, const char **argv) {
             OPT_GROUP("Options:"),
             OPT_HELP(),
             OPT_STRING(0, "simulations", &args.simulations, "Path to JSON simulations file", NULL, 0, OPT_NONEG),
-            OPT_STRING(0, "loglevel", &args.loglevel, "Logger minimum level. Default to `INFO`", NULL, 0, OPT_NONEG),
-            OPT_BOOLEAN(0, "colors", &args.colors, "Enable logger output with colors.", NULL, 0,
+            OPT_STRING(0, "loglevel", &args.loglevel, "Logger level. Default to `INFO`", NULL, 0, OPT_NONEG),
+            OPT_BOOLEAN(0, "colors", &args.colors, "Enable logger output with colors", NULL, 0,
                         OPT_NONEG),
             OPT_END(),
     };
