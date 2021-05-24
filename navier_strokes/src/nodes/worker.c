@@ -100,7 +100,7 @@ void do_worker(const node_worker_args_t *const args) {
             if (tick != 0) ns_tick(ns);
             log_debug("Tick %ld computed", tick);
 
-            log_info("Saving world snapshot on tick %ld", tick);
+            log_debug("Saving world snapshot on tick %ld", tick);
             for (size_t y = 0; y < world->world_height_bounds; ++y) {
                 for (size_t x = 0; x < world->world_width_bounds; ++x) {
                     const double density = *world->world[y][x].density;
@@ -108,6 +108,12 @@ void do_worker(const node_worker_args_t *const args) {
             }
         }
         log_info("Simulation %ld terminated", message.simulation_id);
+
+        // Inform master that we can work again
+        const com_message_t work_message = {.simulation_id = message.simulation_id, .terminate = false};
+        log_debug("Sending work again message to master");
+        MPI_Send(&work_message, 1, message_type, MASTER_NODE_RANK, 0, MPI_COMM_WORLD);
+        log_debug("Message work again sent");
 
         free(simulation_string);
         ns_parse_simulation_free(simulation);
