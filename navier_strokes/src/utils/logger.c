@@ -1,6 +1,8 @@
 #include "ns/utils/logger.h"
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
+#include <sys/types.h>
 
 #define LOGGER_MAX_CALLBACKS 32
 #define LOGGER_UNKNOWN_RANK -1
@@ -90,6 +92,13 @@ const char *log_level_string(int level) {
 }
 
 int log_level_int(const char *level) {
+    char level_copy[8];
+
+    strncpy(level_copy, level, 8);
+    for(uint i = 0; i< strlen(level_copy); ++i) {
+        level_copy[i] = (char) toupper(level_copy[i]);
+    }
+
     if (strncmp("TRACE", level, 8) == 0) return LOG_TRACE;
     if (strncmp("DEBUG", level, 8) == 0) return LOG_DEBUG;
     if (strncmp("INFO", level, 8) == 0) return LOG_INFO;
