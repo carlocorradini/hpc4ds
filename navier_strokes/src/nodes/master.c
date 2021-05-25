@@ -137,7 +137,7 @@ void do_master(const node_master_args_t *const args) {
             com_message_t worker_message;
 
             // Wait message from worker
-            log_info("Worker %ld is working", worker->rank);
+a            log_info("Worker %ld is working", worker->rank);
             log_info("Waiting worker %ld availability message...", worker->rank);
             MPI_Recv(&worker_message, 1, message_type, worker->rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             log_info("Worker %ld message received", worker->rank);
