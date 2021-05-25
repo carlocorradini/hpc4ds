@@ -31,17 +31,19 @@ void do_worker(const node_worker_args_t *const args) {
     while (!message.terminate) {
         log_info("Listening...");
 
+        // Wait a message from master
         MPI_Recv(&message, 1, message_type, MASTER_NODE_RANK, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         log_info("Received message");
+
+        // If message is of type terminate, terminate lifecycle
         if (message.terminate) {
             log_info("TERMINATE");
             break;
         }
 
-        log_info("Reading simulation metadata");
         log_info("Simulation id: %ld", message.simulation_id);
-
         log_info("Waiting simulation...");
+        // Obtain simulation length in chars
         MPI_Probe(0, 0, MPI_COMM_WORLD, &status);
         MPI_Get_count(&status, MPI_CHAR, &simulation_string_length);
 
@@ -52,10 +54,12 @@ void do_worker(const node_worker_args_t *const args) {
             MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
         }
 
+        // Read simulation data
         log_info("Reading simulation %ld composed by %d chars", message.simulation_id, simulation_string_length);
         MPI_Recv(simulation_string, simulation_string_length, MPI_CHAR, MASTER_NODE_RANK, 0, MPI_COMM_WORLD,
                  MPI_STATUS_IGNORE);
 
+        // Parse simulation
         log_info("Parsing simulation %ld", message.simulation_id);
         simulation = ns_parse_simulation(simulation_string);
         if (simulation == NULL) {
@@ -63,6 +67,7 @@ void do_worker(const node_worker_args_t *const args) {
             MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
         }
 
+        // Create Navier Stokes simulation
         ns = ns_create(simulation->world.width, simulation->world.height,
                        simulation->fluid.viscosity, simulation->fluid.density, simulation->fluid.diffusion,
                        simulation->time_step);
@@ -70,36 +75,49 @@ void do_worker(const node_worker_args_t *const args) {
             log_error("Unable to allocate ns structure");
             MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
         }
+
+        // Obtain Navier Stokes world snapshot
         world = ns_get_world(ns);
         if (world == NULL) {
             log_error("Unable to allocate world structure");
             MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
         }
 
+        // Start simulation composed by ticks + 1 (world at tick 0)
         log_info("Starting simulation %ld composed by %ld ticks", message.simulation_id, simulation->ticks);
         for (uint64_t tick = 0; tick <= simulation->ticks; ++tick) {
             log_debug("Init tick %ld", tick);
+
+            // Find a mod based on the current tick
             const ns_parse_simulation_mod_t *const mod = find_mod_by_tick(simulation, tick);
 
             if (mod != NULL) {
+                // A mod has been found, apply it
                 log_debug("Applying mod for tick %ld", tick);
 
+                // Densities
                 for (uint64_t i_d = 0; i_d < mod->densities_length; ++i_d) {
                     const ns_parse_simulation_mods_density_t *const density = mod->densities[i_d];
                     ns_increase_density(ns, density->x, density->y);
                 }
 
+                // Forces
                 for (uint64_t i_f = 0; i_f < mod->forces_length; ++i_f) {
                     const ns_parse_simulation_mods_force_t *const force = mod->forces[i_f];
                     ns_apply_force(ns, force->x, force->y, force->velocity.x, force->velocity.y);
                 }
             } else {
+                // No mod has been found
                 log_debug("Mod not found for tick %ld", tick);
             }
 
+            // Compute a tick if this is not the first one.
+            // This is done to obtain the initial world status.
+            log_debug("Computing tick %ld", tick);
             if (tick != 0) ns_tick(ns);
             log_debug("Tick %ld computed", tick);
 
+            // Save world snapshot
             log_debug("Saving world snapshot on tick %ld", tick);
             for (size_t y = 0; y < world->world_height_bounds; ++y) {
                 for (size_t x = 0; x < world->world_width_bounds; ++x) {
