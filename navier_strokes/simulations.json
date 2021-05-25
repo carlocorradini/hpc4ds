@@ -41,6 +41,31 @@
           ]
         }
       ]
+    },
+    {
+      "time_step": 0.01,
+      "ticks": 1,
+      "world": {
+        "width": 10,
+        "height": 10
+      },
+      "fluid": {
+        "viscosity": 0.0001,
+        "density": 10,
+        "diffusion": 0.0001
+      },
+      "mods": [
+        {
+          "tick": 0,
+          "densities": [
+            {
+              "x": 4,
+              "y": 4
+            }
+          ],
+          "forces": []
+        }
+      ]
     }
   ]
 }

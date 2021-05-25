@@ -45,7 +45,7 @@ void do_worker(const node_worker_args_t *const args) {
         // If message is of type terminate, terminate lifecycle
         if (message.terminate) {
             log_info("TERMINATE");
-            break;
+            continue;
         }
 
         log_info("Simulation id: %ld", message.simulation_id);
@@ -210,7 +210,7 @@ void do_worker(const node_worker_args_t *const args) {
 
         log_info("Simulation %ld terminated", message.simulation_id);
 
-        // Inform master that we can work again
+        // Inform master that I can work again
         const com_message_t work_message = {.simulation_id = message.simulation_id, .terminate = false};
         log_debug("Sending work again message to master");
         MPI_Send(&work_message, 1, message_type, MASTER_NODE_RANK, 0, MPI_COMM_WORLD);
