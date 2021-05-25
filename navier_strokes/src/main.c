@@ -2,6 +2,7 @@
 #include <string.h>
 #include <mpi.h>
 #include <argparse.h>
+#include <dirent.h>
 #include "ns/config.h"
 #include "ns/nodes/master.h"
 #include "ns/nodes/worker.h"
@@ -87,16 +88,25 @@ static void make_args(int argc, const char **argv) {
 }
 
 static bool check_args(void) {
+    // Simulations
     if (args.simulations == NULL) {
         log_error("`simulations` argument missing or invalid");
         return false;
     }
+    // Results
     if (args.results == NULL) {
         log_error("`results` argument missing or invalid");
         return false;
     }
     if (args.results[strlen(args.results) - 1] == '/')
         args.results[strlen(args.results) - 1] = '\0';
+    // Check if results directory exists
+    DIR *results_dir = opendir(args.results);
+    if (results_dir) closedir(results_dir);
+    else {
+        log_error("Results folder is invalid: %s", args.results);
+        return false;
+    }
 
     return true;
 }

@@ -159,7 +159,7 @@ void do_worker(const node_worker_args_t *const args) {
 
                     if (cJSON_AddNumberToObject(cell_json, "x", (double) x) == NULL
                         || cJSON_AddNumberToObject(cell_json, "y", (double) y) == NULL
-                        || cJSON_AddNumberToObject(cell_json, "density", *cell->density) == NULL
+                        || cJSON_AddNumberToObject(cell_json, "d", *cell->density) == NULL
                         || cJSON_AddNumberToObject(cell_json, "u", *cell->u) == NULL
                         || cJSON_AddNumberToObject(cell_json, "v", *cell->v) == NULL) {
                         log_error("Unable to add data to JSON cell");
