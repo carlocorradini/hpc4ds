@@ -30,7 +30,7 @@ $ make
 ## Run
 
 ```bash
-$ mpirun -n <#> ./navierstokes --simulations=./simulations.json --colors --loglevel=DEBUG
+$ mpirun -n <#> ./navierstokes --simulations=./simulations.json --results=./res --colors --loglevel=DEBUG
 ```
 
 ## Arguments
@@ -39,11 +39,19 @@ $ mpirun -n <#> ./navierstokes --simulations=./simulations.json --colors --logle
 
   Show helpful information
 
-- --simulations=<str>
+- --simulations=\<str>
+
+  **REQUIRED**
 
   Path to JSON simulations file
 
-- --loglevel=<str>
+- --results=\<str>
+
+  **REQUIRED**
+
+  Path to folder used to save JSON simulation results
+
+- --loglevel=\<str>
 
   Logger level. Default to \`INFO\`
 
