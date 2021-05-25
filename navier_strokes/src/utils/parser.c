@@ -212,6 +212,8 @@ ns_parse_simulation_check_and_assign_fluid(const cJSON *const fluid_json, ns_par
     return true;
 }
 
+
+#include <ns/utils/logger.h>
 static bool ns_parse_simulation_check_and_assign_mod(const cJSON *const mod_json, ns_parse_simulation_mod_t *mod) {
     if (mod_json == NULL || mod == NULL) return false;
 
@@ -224,14 +226,14 @@ static bool ns_parse_simulation_check_and_assign_mod(const cJSON *const mod_json
     forces_json = cJSON_GetObjectItemCaseSensitive(mod_json, "forces");
 
     if (!(cJSON_IsNumber(tick_json) && tick_json->valueint >= 0
-          && (cJSON_IsNull(densities_json) || cJSON_IsArray(densities_json))
-          && (cJSON_IsNull(forces_json) || cJSON_IsArray(forces_json))
+          && (densities_json == NULL || cJSON_IsNull(densities_json) || cJSON_IsArray(densities_json))
+          && (forces_json == NULL || cJSON_IsNull(forces_json) || cJSON_IsArray(forces_json))
     ))
         return false;
 
     mod->tick = (uint64_t) tick_json->valueint;
 
-    if (cJSON_IsNull(densities_json)) {
+    if (densities_json == NULL || cJSON_IsNull(densities_json)) {
         mod->densities_length = 0;
         mod->densities = NULL;
     } else {
@@ -265,7 +267,7 @@ static bool ns_parse_simulation_check_and_assign_mod(const cJSON *const mod_json
         }
     }
 
-    if (cJSON_IsNull(forces_json)) {
+    if (forces_json == NULL || cJSON_IsNull(forces_json)) {
         mod->forces_length = 0;
         mod->forces = NULL;
     } else {
