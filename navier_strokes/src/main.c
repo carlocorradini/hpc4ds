@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <mpi.h>
 #include <argparse.h>
 #include "ns/config.h"
@@ -9,19 +10,21 @@
 static const char *description = "\n" PROJECT_DESCRIPTION "\n\tv." PROJECT_VERSION;
 static const char *epilog = "\n© Carlo Corradini & Massimiliano Fronza";
 static const char *const usage[] = {
-        "mpirun -n <#> ./navierstokes --simulations=./simulations.json",
-        "mpirun -n <#> ./navierstokes --simulations=./simulations.json --colors",
-        "mpirun -n <#> ./navierstokes --simulations=./simulations.json --colors --loglevel=DEBUG",
+        "mpirun -n <#> ./navierstokes --simulations=./simulations.json --results=./results",
+        "mpirun -n <#> ./navierstokes --simulations=./simulations.json --results=./results --colors",
+        "mpirun -n <#> ./navierstokes --simulations=./simulations.json --results=./results --colors --loglevel=DEBUG",
         NULL
 };
 
 // Arguments
 static struct {
     char *simulations;
+    char *results;
     char *loglevel;
     bool colors;
 } args = {
         .simulations = NULL,
+        .results = NULL,
         .loglevel = "INFO",
         .colors = false,
 };
@@ -51,11 +54,11 @@ int main(int argc, const char **argv) {
 
     if (rank == 0) {
         // Master
-        node_master_args_t master_args = {.simulations = args.simulations};
+        node_master_args_t master_args = {.simulations_path = args.simulations};
         do_master(&master_args);
     } else {
         // Worker
-        node_worker_args_t worker_args = {};
+        node_worker_args_t worker_args = {.results_path = args.results};
         do_worker(&worker_args);
     }
 
@@ -70,6 +73,8 @@ static void make_args(int argc, const char **argv) {
             OPT_GROUP("Options:"),
             OPT_HELP(),
             OPT_STRING(0, "simulations", &args.simulations, "Path to JSON simulations file", NULL, 0, OPT_NONEG),
+            OPT_STRING(0, "results", &args.results, "Path to folder used to save JSON simulation results", NULL, 0,
+                       OPT_NONEG),
             OPT_STRING(0, "loglevel", &args.loglevel, "Logger level. Default to `INFO`", NULL, 0, OPT_NONEG),
             OPT_BOOLEAN(0, "colors", &args.colors, "Enable logger output with colors", NULL, 0,
                         OPT_NONEG),
@@ -86,6 +91,12 @@ static bool check_args(void) {
         log_error("`simulations` argument missing or invalid");
         return false;
     }
+    if (args.results == NULL) {
+        log_error("`results` argument missing or invalid");
+        return false;
+    }
+    if (args.results[strlen(args.results) - 1] == '/')
+        args.results[strlen(args.results) - 1] = '\0';
 
     return true;
 }

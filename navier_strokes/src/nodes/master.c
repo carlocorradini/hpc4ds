@@ -32,8 +32,8 @@ void do_master(const node_master_args_t *const args) {
     log_info("Workers available: %d", available_workers);
 
     // Read simulations file
-    log_info("Reading simulations file at %s", args->simulations);
-    simulations_string = read_file(args->simulations, file_error);
+    log_info("Reading simulations file at %s", args->simulations_path);
+    simulations_string = read_file(args->simulations_path, file_error);
     if (simulations_string == NULL) {
         log_error("Error opening and managing simulations file: %s", file_error);
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
@@ -43,7 +43,7 @@ void do_master(const node_master_args_t *const args) {
     log_info("Parsing simulations file content");
     simulations = ns_parse_simulations(simulations_string);
     if (simulations == NULL) {
-        log_error("Unable to parse simulations file `%s`", args->simulations);
+        log_error("Unable to parse simulations file `%s`", args->simulations_path);
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
     }
     free(simulations_string);

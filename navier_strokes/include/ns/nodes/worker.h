@@ -5,6 +5,7 @@
  * Worker node arguments.
  */
 typedef struct node_worker_args_t {
+    char *results_path;
 } node_worker_args_t;
 
 /**
