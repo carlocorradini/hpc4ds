@@ -1,6 +1,5 @@
 #include "ns/utils/logger.h"
 #include <string.h>
-#include <ctype.h>
 #include <time.h>
 #include <sys/types.h>
 
@@ -95,16 +94,18 @@ int log_level_int(const char *level) {
     char level_copy[8];
 
     strncpy(level_copy, level, 8);
-    for(uint i = 0; i< strlen(level_copy); ++i) {
-        level_copy[i] = (char) toupper(level_copy[i]);
+    for (uint i = 0; i < strlen(level_copy); ++i) {
+        if (level_copy[i] >= 'a' && level_copy[i] <= 'z') {
+            level_copy[i] = (char) (level_copy[i] - 32);
+        }
     }
 
-    if (strncmp("TRACE", level, 8) == 0) return LOG_TRACE;
-    if (strncmp("DEBUG", level, 8) == 0) return LOG_DEBUG;
-    if (strncmp("INFO", level, 8) == 0) return LOG_INFO;
-    if (strncmp("WARN", level, 8) == 0) return LOG_WARN;
-    if (strncmp("ERROR", level, 8) == 0) return LOG_ERROR;
-    if (strncmp("FATAL", level, 8) == 0) return LOG_FATAL;
+    if (strncmp("TRACE", level_copy, 8) == 0) return LOG_TRACE;
+    if (strncmp("DEBUG", level_copy, 8) == 0) return LOG_DEBUG;
+    if (strncmp("INFO", level_copy, 8) == 0) return LOG_INFO;
+    if (strncmp("WARN", level_copy, 8) == 0) return LOG_WARN;
+    if (strncmp("ERROR", level_copy, 8) == 0) return LOG_ERROR;
+    if (strncmp("FATAL", level_copy, 8) == 0) return LOG_FATAL;
 
     return LOG_INFO;
 }
