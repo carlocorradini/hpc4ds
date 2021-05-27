@@ -96,9 +96,8 @@ ns_t *ns_create(uint64_t world_width, uint64_t world_height,
     schedule(auto) \
     default(none) private(i) shared(ns, error)
         for (i = 0; i < ns->world_height_bounds; ++i) {
-            if (error) {
-#pragma omp cancel for
-            }
+            if (error) continue;
+
             ns->u[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
             ns->u_prev[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
             ns->v[i] = (double *) calloc(ns->world_width_bounds, sizeof(double));
