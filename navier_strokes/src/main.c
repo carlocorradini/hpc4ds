@@ -7,6 +7,7 @@
 #include "ns/nodes/master.h"
 #include "ns/nodes/worker.h"
 #include "ns/utils/logger.h"
+#include "ns/utils/time_measure.h"
 
 static const char *description = "\n" PROJECT_DESCRIPTION "\n\tv." PROJECT_VERSION;
 static const char *epilog = "\n© Carlo Corradini & Massimiliano Fronza";
@@ -39,9 +40,17 @@ int main(int argc, const char **argv) {
     int rank;
     int size;
 
+    // Uncomment to smash the stack
+    //time_meas *now = createTime();
+    //startTime(&now);
+
     MPI_Init(NULL, NULL);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    // Uncomment to smash the stack
+    //stopTime(&now);
+    //printTime(&now);
 
     log_set_rank(rank);
     log_set_level(log_level_int(args.loglevel));
