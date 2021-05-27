@@ -1,5 +1,4 @@
 #include "ns/nodes/com/message.h"
-#include <stdlib.h>
 
 void com_message_MPI_datatype(MPI_Datatype *message_type) {
     if (message_type == NULL) return;
