@@ -3,16 +3,12 @@
 
 #include <sys/time.h>
 
-// Data wrapper (opaque)
-typedef struct time_measurement_t time_measurement_t;
-
-/**
- * Create a new time measurement struct.
- * Remember to free with free.
- *
- * @return Time measurement struct reference, NULL otherwise
- */
-time_measurement_t *time_measurement_create();
+typedef struct time_measurement_t {
+    // Start time
+    struct timeval start;
+    // Stop time
+    struct timeval stop;
+} time_measurement_t;
 
 /**
  * Set the start time.
@@ -43,15 +39,6 @@ time_t time_measurement_get_difference_microsecond(const time_measurement_t *tim
  * @param text Optional text to append before the time difference.
  */
 void time_measurement_print_difference(const time_measurement_t *time, const char *text);
-
-/**
- * Utility function to execute two operations in one.
- * 1. Create a new time measurement struct.
- * 2. Set the start time.
- *
- * @return Time measurement struct reference
- */
-time_measurement_t *time_measurement_create_and_start();
 
 /**
  * Utility function to execute two operations in one.

@@ -1,23 +1,5 @@
 #include "ns/utils/time_measurement.h"
-#include <stdlib.h>
 #include "ns/utils/logger.h"
-
-// Data wrapper
-typedef struct time_measurement_t {
-    // Start time
-    struct timeval start;
-    // Stop time
-    struct timeval stop;
-} time_measurement_t;
-
-time_measurement_t *time_measurement_create() {
-    time_measurement_t *time = NULL;
-
-    time = (time_measurement_t *) malloc(sizeof(time_measurement_t));
-    if (time == NULL) return NULL;
-
-    return time;
-}
 
 void time_measurement_start(time_measurement_t *time) {
     if (time == NULL) {
@@ -48,15 +30,6 @@ void time_measurement_print_difference(const time_measurement_t *const time, con
 
     log_info("[TIME_MEASUREMENT]: %s -> %lldµs", text != NULL ? text : "",
              time_measurement_get_difference_microsecond(time));
-}
-
-time_measurement_t *time_measurement_create_and_start() {
-    time_measurement_t *time = NULL;
-
-    time = time_measurement_create();
-    time_measurement_start(time);
-
-    return time;
 }
 
 void time_measurement_stop_and_print(time_measurement_t *time, const char *const text) {

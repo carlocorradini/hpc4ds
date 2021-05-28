@@ -56,18 +56,20 @@ int main(int argc, const char **argv) {
 
     if (rank == 0) {
         // Master
+        time_measurement_t time;
         node_master_args_t master_args = {.simulations_path = args.simulations};
-        time_measurement_t *time = time_measurement_create_and_start();
+
+        time_measurement_start(&time);
         do_master(&master_args);
-        time_measurement_stop_and_print(time, "Master execution time");
-        free(time);
+        time_measurement_stop_and_print(&time, "Master execution time");
     } else {
         // Worker
+        time_measurement_t time;
         node_worker_args_t worker_args = {.results_path = args.results};
-        time_measurement_t *time = time_measurement_create_and_start();
+
+        time_measurement_start(&time);
         do_worker(&worker_args);
-        time_measurement_stop_and_print(time, "Worker execution time");
-        free(time);
+        time_measurement_stop_and_print(&time, "Worker execution time");
     }
 
     log_info("Terminating...");
