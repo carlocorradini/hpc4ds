@@ -1,5 +1,11 @@
+#
 # Generated files & directories
+#
+# Generated configuration file from CMake
 include/ns/config.h
+# Generated results from simulations
+hpc/results/*
+!hpc/results/.gitkeep
 ################################################################
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
