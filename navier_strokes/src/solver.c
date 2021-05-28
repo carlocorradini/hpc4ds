@@ -162,6 +162,10 @@ void ns_tick(ns_t *ns) {
 bool ns_increase_density(ns_t *ns, uint64_t x, uint64_t y) {
     bool status = false;
 
+    // Fix due to bounds
+    x += 1;
+    y += 1;
+
     if (!is_valid_coordinate(ns, x, y))
         fprintf(stderr, "Invalid increase_density coordinates {x: %ld, y: %ld}\n", x, y);
     else status = true;
@@ -174,6 +178,10 @@ bool ns_increase_density(ns_t *ns, uint64_t x, uint64_t y) {
 
 bool ns_apply_force(ns_t *ns, uint64_t x, uint64_t y, double v_x, double v_y) {
     bool status = false;
+
+    // Fix due to bounds
+    x += 1;
+    y += 1;
 
     if (!is_valid_coordinate(ns, x, y))
         fprintf(stderr, "Invalid apply_force coordinates {x: %ld, y: %ld}\n", x, y);
