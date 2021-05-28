@@ -7,7 +7,7 @@
 #include "ns/nodes/master.h"
 #include "ns/nodes/worker.h"
 #include "ns/utils/logger.h"
-#include "ns/utils/time_measure.h"
+#include "ns/utils/time_measurement.h"
 
 static const char *description = "\n" PROJECT_DESCRIPTION "\n\tv." PROJECT_VERSION;
 static const char *epilog = "\n© Carlo Corradini & Massimiliano Fronza";
@@ -40,17 +40,9 @@ int main(int argc, const char **argv) {
     int rank;
     int size;
 
-    // Uncomment to smash the stack
-    //time_meas *now = createTime();
-    //startTime(&now);
-
     MPI_Init(NULL, NULL);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    // Uncomment to smash the stack
-    //stopTime(&now);
-    //printTime(&now);
 
     log_set_rank(rank);
     log_set_level(log_level_int(args.loglevel));
@@ -65,15 +57,22 @@ int main(int argc, const char **argv) {
     if (rank == 0) {
         // Master
         node_master_args_t master_args = {.simulations_path = args.simulations};
+        time_measurement_t *time = time_measurement_create_and_start();
         do_master(&master_args);
+        time_measurement_stop_and_print(time, "Master execution time");
+        free(time);
     } else {
         // Worker
         node_worker_args_t worker_args = {.results_path = args.results};
+        time_measurement_t *time = time_measurement_create_and_start();
         do_worker(&worker_args);
+        time_measurement_stop_and_print(time, "Worker execution time");
+        free(time);
     }
 
     log_info("Terminating...");
     MPI_Finalize();
+
     return EXIT_SUCCESS;
 }
 
