@@ -110,7 +110,7 @@ void ns_parse_simulation_free(ns_simulation_t *simulation) {
             }
 
             if (mod != NULL && mod->forces != NULL) {
-                for (uint64_t i_f = 0; i_f < mod->densities_length; ++i_f) {
+                for (uint64_t i_f = 0; i_f < mod->forces_length; ++i_f) {
                     ns_parse_simulation_mods_force_t *force = mod->forces[i_f];
                     free(force);
                 }
@@ -212,8 +212,6 @@ ns_parse_simulation_check_and_assign_fluid(const cJSON *const fluid_json, ns_par
     return true;
 }
 
-
-#include <ns/utils/logger.h>
 static bool ns_parse_simulation_check_and_assign_mod(const cJSON *const mod_json, ns_parse_simulation_mod_t *mod) {
     if (mod_json == NULL || mod == NULL) return false;
 
