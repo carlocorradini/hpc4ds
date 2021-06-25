@@ -228,7 +228,7 @@ void do_worker(const node_worker_args_t *const args) {
 }
 
 static ns_parse_simulation_mod_t *find_mod_by_tick(const ns_simulation_t *const simulation, uint64_t tick) {
-    if (simulation == NULL || simulation->mods == NULL || tick < 0 || tick > simulation->ticks - 1)
+    if (simulation == NULL || simulation->mods == NULL || tick < 0 || tick > simulation->ticks)
         return NULL;
 
     for (uint64_t i = 0; i < simulation->mods_length; ++i) {
