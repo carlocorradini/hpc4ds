@@ -6,7 +6,7 @@
 #include <mpi.h>
 
 /**
- * Message type
+ * Message type.
  */
 typedef struct com_message_t {
     bool terminate;
