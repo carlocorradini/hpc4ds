@@ -4,7 +4,7 @@
 #PBS -q short_cpuQ
 
 readonly NUMBER_PROCESSES=5
-readonly __DIRNAME=${PWD}
+readonly __DIRNAME="."
 
 module load mpich-3.2
 mpirun.actual -np "${NUMBER_PROCESSES}" "${__DIRNAME}/navierstokes" --simulations="${__DIRNAME}/simulations.json" --results="${__DIRNAME}/results"
