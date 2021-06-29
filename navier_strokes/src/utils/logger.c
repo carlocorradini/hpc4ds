@@ -1,10 +1,12 @@
 #include "ns/utils/logger.h"
 #include <string.h>
+#include <limits.h>
+#include <unistd.h>
 #include <time.h>
 #include <sys/types.h>
 
 #define LOGGER_MAX_CALLBACKS 32
-#define LOGGER_UNKNOWN_RANK -1
+#define LOGGER_UNKNOWN_RANK (-1)
 #define LOGGER_MAX_RANK_CHARS 4
 
 typedef struct {
@@ -38,14 +40,15 @@ static const char *level_colors[] = {
 static void stdout_callback(log_Event *ev) {
     char time_buf[64];
     char rank[LOGGER_MAX_RANK_CHARS + 1] = "\0";
+    char hostname[HOST_NAME_MAX + 1];
 
     time_buf[strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", ev->time)] = '\0';
-    if (L.rank != LOGGER_UNKNOWN_RANK)
-        snprintf(rank, LOGGER_MAX_RANK_CHARS + 1, "%d", L.rank);
+    if (L.rank != LOGGER_UNKNOWN_RANK) snprintf(rank, LOGGER_MAX_RANK_CHARS + 1, "%d", L.rank);
+    gethostname(hostname, HOST_NAME_MAX + 1);
 
-    fprintf(ev->udata, "[%.*s%s] %s ",
+    fprintf(ev->udata, "[%.*s%s@%s] %s ",
             (LOGGER_MAX_RANK_CHARS < strlen(rank)) ? 0 : (int) (LOGGER_MAX_RANK_CHARS - strlen(rank)),
-            "--------------------------------", rank, time_buf);
+            "--------------------------------", rank, hostname, time_buf);
 
     if (L.colors) {
         fprintf(
