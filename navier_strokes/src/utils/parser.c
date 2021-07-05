@@ -296,8 +296,8 @@ static bool ns_parse_simulation_check_and_assign_mod(const cJSON *const mod_json
 
             if (!(cJSON_IsNumber(x) && x->valueint >= 0
                   && cJSON_IsNumber(y) && y->valueint >= 0
-                  && cJSON_IsNumber(velocity_x) && velocity_x->valuedouble >= 0
-                  && cJSON_IsNumber(velocity_y) && velocity_y->valuedouble >= 0
+                  && cJSON_IsNumber(velocity_x)
+                  && cJSON_IsNumber(velocity_y)
             ))
                 return false;
 
