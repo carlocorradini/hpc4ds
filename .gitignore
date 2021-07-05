@@ -87,7 +87,7 @@ fabric.properties
 /navier_strokes/src/output.txt
 
 # Jupyter checkpoints
-/navier_strokes/.ipynb_checkpoints
+/navier_strokes/notebook/.ipynb_checkpoints
 
 # Java classes
 /navier_strokes/ns_java/target/classes/GUI.class
