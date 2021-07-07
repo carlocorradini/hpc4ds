@@ -572,7 +572,6 @@
         {
           "tick": 5,
           "densities": [
-            
           ],
           "forces": [
             {
@@ -596,7 +595,6 @@
         {
           "tick": 10,
           "densities": [
-
           ],
           "forces": [
             {
@@ -620,7 +618,6 @@
         {
           "tick": 50,
           "densities": [
-
           ],
           "forces": [
             {
@@ -2130,7 +2127,6 @@
         {
           "tick": 5,
           "densities": [
-            
           ],
           "forces": [
             {
@@ -2154,7 +2150,6 @@
         {
           "tick": 10,
           "densities": [
-
           ],
           "forces": [
             {
@@ -2210,7 +2205,6 @@
         {
           "tick": 20,
           "densities": [
-
           ],
           "forces": [
             {
@@ -2266,7 +2260,6 @@
         {
           "tick": 30,
           "densities": [
-
           ],
           "forces": [
             {
@@ -2322,7 +2315,6 @@
         {
           "tick": 40,
           "densities": [
-
           ],
           "forces": [
             {
@@ -2378,7 +2370,6 @@
         {
           "tick": 50,
           "densities": [
-
           ],
           "forces": [
             {
@@ -2394,7 +2385,6 @@
         {
           "tick": 60,
           "densities": [
-
           ],
           "forces": [
             {
@@ -2410,7 +2400,6 @@
         {
           "tick": 70,
           "densities": [
-
           ],
           "forces": [
             {
@@ -2426,7 +2415,6 @@
         {
           "tick": 80,
           "densities": [
-
           ],
           "forces": [
             {
@@ -2440,6 +2428,32 @@
           ]
         }
       ]
+    },
+    {
+      "time_step": 0.01,
+      "ticks": 10,
+      "world": {
+        "width": 1000,
+        "height": 1000
+      },
+      "fluid": {
+        "viscosity": 0.0001,
+        "density": 10,
+        "diffusion": 0.0001
+      }
+    },
+    {
+      "time_step": 0.01,
+      "ticks": 1000,
+      "world": {
+        "width": 10,
+        "height": 10
+      },
+      "fluid": {
+        "viscosity": 0.0001,
+        "density": 10,
+        "diffusion": 0.0001
+      }
     },
     {
       "time_step": 0.01,
@@ -2490,24 +2504,6 @@
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "time_step": 0.01,
-      "ticks": 1,
-      "world": {
-        "width": 10,
-        "height": 10
-      },
-      "fluid": {
-        "viscosity": 0.0001,
-        "density": 10,
-        "diffusion": 0.0001
-      },
-      "mods": [
-        {
-          "tick": 0
         }
       ]
     }
