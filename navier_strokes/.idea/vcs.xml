@@ -6,8 +6,10 @@
     <mapping directory="$PROJECT_DIR$/build/_deps/cjson-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/argparse-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/cjson-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/doxygen-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/cmake-build-release/_deps/argparse-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/cmake-build-release/_deps/cjson-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-release/_deps/doxygen-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ns_java" vcs="Git" />
   </component>
 </project>

@@ -6,6 +6,10 @@ include/ns/config.h
 # Generated results from simulations
 hpc/results/*
 !hpc/results/.gitkeep
+# Jupyter Notebook
+.ipynb_checkpoints/*
+# Java targets
+ns_java/target/*
 ################################################################
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
