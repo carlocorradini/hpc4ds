@@ -14,6 +14,7 @@
 ### Building
 
 > -DNO_OPEN_MP=On | Build **without** OpenMP
+> 
 > -DCMAKE_BUILD_TYPE=Release | Build **release** binary
 
 ```bash
