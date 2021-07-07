@@ -12,9 +12,10 @@
 static const char *description = "\n" PROJECT_DESCRIPTION "\n\tv." PROJECT_VERSION;
 static const char *epilog = "\n© Carlo Corradini & Massimiliano Fronza";
 static const char *const usage[] = {
-        "mpirun -n <#> ./navierstokes --simulations=./simulations.json --results=./results",
-        "mpirun -n <#> ./navierstokes --simulations=./simulations.json --results=./results --colors",
-        "mpirun -n <#> ./navierstokes --simulations=./simulations.json --results=./results --colors --loglevel=DEBUG",
+        "mpirun -np <#> ./navierstokes --simulations=./simulations.json --results=./results",
+        "mpirun -np <#> ./navierstokes --simulations=./simulations.json --results=./results --colors",
+        "mpirun -np <#> ./navierstokes --simulations=./simulations.json --results=./results --loglevel=DEBUG",
+        "mpirun -np <#> ./navierstokes --simulations=./simulations.json --results=./results --colors --loglevel=DEBUG",
         NULL
 };
 

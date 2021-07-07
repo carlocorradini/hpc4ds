@@ -1,7 +1,11 @@
 #!/bin/bash
 
-#PBS -l nodes=8:ppn=1
+#PBS -l nodes=8
 #PBS -q short_cpuQ
+
+# Current working directory
+# See https://unix.stackexchange.com/questions/207205/current-directory-in-qsub
+cd "$PBS_O_WORKDIR" || exit $?
 
 readonly NUMBER_PROCESSES=8
 

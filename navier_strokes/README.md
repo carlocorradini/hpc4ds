@@ -13,7 +13,9 @@
 
 ### Building
 
-> -DNO_OPEN_MP=On to compile **without** OpenMP
+> -DNO_OPEN_MP=On | Build **without** OpenMP
+> 
+> -DCMAKE_BUILD_TYPE=Release | Build **release** binary
 
 ```bash
 $ mkdir build
@@ -30,7 +32,7 @@ $ make
 ## Run
 
 ```bash
-$ mpirun -n <#> ./navierstokes --simulations=./simulations.json --results=./res --colors --loglevel=DEBUG
+$ mpirun -np 2 ./navierstokes --simulations=./simulations.json --results=./res --colors --loglevel=DEBUG
 ```
 
 ## Arguments
