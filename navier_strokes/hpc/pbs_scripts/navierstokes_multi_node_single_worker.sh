@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#PBS -l nodes=4
+#PBS -l nodes=2:ppn=1
 #PBS -q short_cpuQ
 
 readonly NUMBER_PROCESSES=2
