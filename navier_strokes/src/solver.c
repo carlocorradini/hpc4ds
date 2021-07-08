@@ -394,8 +394,14 @@ static void ns_advect(const ns_t *ns, uint64_t bounds, double **d, double **d0, 
 }
 
 static void ns_set_bounds(const ns_t *ns, uint64_t bounds, double **target) {
-    for (uint64_t y = 1; y <= ns->world_height; ++y) {
-        for (uint64_t x = 1; x <= ns->world_width; ++x) {
+    uint64_t y;
+    uint64_t x;
+
+#pragma omp parallel for collapse(2) \
+    schedule(auto) \
+    default(none) private(y, x) shared(ns, target, bounds)
+    for (y = 1; y <= ns->world_height; ++y) {
+        for (x = 1; x <= ns->world_width; ++x) {
             target[y][0] = (bounds == 1) ? -target[y][1] : target[y][1];
             target[y][ns->world_width + 1] = bounds == 1 ? -target[y][ns->world_width] : target[y][ns->world_width];
             target[0][x] = bounds == 2 ? -target[1][x] : target[1][x];
