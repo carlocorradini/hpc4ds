@@ -294,7 +294,6 @@ static void
 ns_diffuse(const ns_t *ns, uint64_t bounds, double diffusion_value, double **target, const double **source) {
     const double a = ns->time_step * diffusion_value * (double) ns->world_width * (double) ns->world_height;
 
-    //TODO 20? MAYBE ITERATIONS? thread???
     for (uint64_t k = 0; k < 20; k++) {
         for (uint64_t y = 1; y <= ns->world_height; ++y) {
             for (uint64_t x = 1; x <= ns->world_width; ++x) {
@@ -310,7 +309,6 @@ ns_diffuse(const ns_t *ns, uint64_t bounds, double diffusion_value, double **tar
 
 static void ns_project(ns_t *ns) {
     uint64_t x, y;
-    // TODO ??? N CONTROLLA SOURCE
     double h = 1.0 / (double) ns->world_width;
 
     for (y = 1; y <= ns->world_height; ++y) {
@@ -324,7 +322,6 @@ static void ns_project(ns_t *ns) {
     ns_set_bounds(ns, 0, ns->v_prev);
     ns_set_bounds(ns, 0, ns->u_prev);
 
-    // TODO k = 20 wtf iterations?
     for (uint64_t k = 0; k < 20; k++) {
         for (y = 1; y <= ns->world_height; ++y) {
             for (x = 1; x <= ns->world_width; ++x) {
