@@ -9,4 +9,7 @@
 #define PROJECT_VERSION_PATCH "1"
 #define PROJECT_VERSION "0.0.1"
 
+// OpenMP
+#define DEFAULT_OPEN_MP_SCHEDULE auto
+
 #endif
