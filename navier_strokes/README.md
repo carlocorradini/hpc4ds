@@ -32,7 +32,7 @@ $ make
 ## Run
 
 ```bash
-$ mpirun -np 2 ./navierstokes --simulations=./simulations.json --results=./res --colors --loglevel=DEBUG
+$ mpiexec -np 2 ./navierstokes --simulations=./simulations.json --results=./res --colors --loglevel=DEBUG
 ```
 
 ## Arguments
